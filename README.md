@@ -143,7 +143,7 @@ Hardware checklist:
 - Decide whether the custom tab bar stays the default or Apple's system bar takes over (one switch).
 - Light mode: currently dark only by design.
 - Optional export of a "corrected" series for analysis, computed offline from the stored raw data, never in the live view.
-- License: the source repository had no license file, so none is included here yet. The bundled fonts are under the SIL Open Font License 1.1 (see `MuonMonitor/Resources/Fonts`).
+- License: MIT (see `LICENSE`). The bundled fonts are under the SIL Open Font License 1.1 (see `MuonMonitor/Resources/Fonts`).
 
 ## More
 
