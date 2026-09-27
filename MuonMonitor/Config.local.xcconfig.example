@@ -1,0 +1,13 @@
+// Copy to Config.local.xcconfig (same folder). It is git-ignored.
+// Values here override Config.xcconfig.
+
+// Xcode › Settings › Accounts › your Apple ID › Personal Team shows the 10-character team ID.
+MUON_TEAM = YOURTEAMID
+
+// Must be globally unique for your team, for example com.yourname.muonp4.
+MUON_BUNDLE_ID = com.yourname.muonp4
+
+// If Xcode cannot register the App Group with a free account, uncomment these three:
+// MUON_APP_GROUP =
+// MUON_APP_ENTITLEMENTS =
+// MUON_WIDGET_ENTITLEMENTS =

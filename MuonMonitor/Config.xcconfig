@@ -1,4 +1,8 @@
-// MuonP4 build settings. Edit here, not in the project file.
+// MuonP4 build settings. Edit here (or in Config.local.xcconfig), not in the project file.
+//
+// Easiest: copy Config.local.xcconfig.example to Config.local.xcconfig and put your
+// team and bundle ID there. That file is git-ignored, so your team ID never ends up
+// in a commit, and it overrides the values below.
 
 // Your team: Xcode › Settings › Accounts › (your Apple ID) › Personal Team.
 // You can also leave this empty and pick the team under Signing & Capabilities.
@@ -13,3 +17,6 @@ MUON_BUNDLE_ID = com.sawaiz.muonp4
 MUON_APP_GROUP = group.$(MUON_BUNDLE_ID)
 MUON_APP_ENTITLEMENTS = App/App.entitlements
 MUON_WIDGET_ENTITLEMENTS = Widget/Widget.entitlements
+
+// Personal overrides (git-ignored, optional). Must stay the last line.
+#include? "Config.local.xcconfig"

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Regenerates MuonMonitor.xcodeproj from the folders on disk.
 
-Run after adding or removing Swift files:  python3 tools/generate_project.py
-Signing and identifiers live in Config.xcconfig, not in the project.
+Run from the repository root after cloning, and again after adding or removing
+Swift files or resources:  python3 tools/generate_project.py
+Signing and identifiers live in MuonMonitor/Config.xcconfig, not in the project.
+Paths inside the project are relative to MuonMonitor/.
 """
 import hashlib, json, os, pathlib
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
+ROOT = pathlib.Path(__file__).resolve().parent.parent / "MuonMonitor"
 PROJ = ROOT / "MuonMonitor.xcodeproj"
 
 def oid(*parts):
@@ -15,10 +17,16 @@ def oid(*parts):
 def swift(folder):
     return sorted(str(p.relative_to(ROOT)) for p in (ROOT / folder).rglob("*.swift"))
 
-WIDGET_SHARED = ["Shared/Palette.swift", "Shared/MuonActivity.swift", "Shared/SharedState.swift", "Shared/Intents.swift", "Shared/MinuteBars.swift"]
+# Everything in Shared/ is compiled into both targets (design tokens, glyphs, activity
+# attributes, intents), except the telemetry decoder, which only the app needs.
+WIDGET_EXCLUDED = {"Shared/Telemetry.swift"}
+WIDGET_SHARED = [p for p in swift("Shared") if p not in WIDGET_EXCLUDED]
+# Bundled fonts (SIL OFL 1.1) are copied into both the app and the widget extension
+# and registered through UIAppFonts in each Info.plist.
+RESOURCES = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "Resources").rglob("*") if p.is_file() and not p.name.startswith("."))
 APP_SOURCES = swift("App") + swift("Shared")
 WIDGET_SOURCES = swift("Widget") + WIDGET_SHARED
-OTHER_FILES = ["App/Info.plist", "Widget/Info.plist", "App/App.entitlements", "Widget/Widget.entitlements", "Config.xcconfig", "README.md"]
+OTHER_FILES = ["App/Info.plist", "Widget/Info.plist", "App/App.entitlements", "Widget/Widget.entitlements", "Config.xcconfig"]
 
 objects = {}
 def add(key, obj):
@@ -27,10 +35,11 @@ def add(key, obj):
 
 def filetype(p):
     return {".swift": "sourcecode.swift", ".plist": "text.plist.xml", ".entitlements": "text.plist.entitlements",
-            ".xcconfig": "text.xcconfig", ".md": "net.daringfireball.markdown"}[pathlib.Path(p).suffix]
+            ".xcconfig": "text.xcconfig", ".md": "net.daringfireball.markdown", ".ttf": "file", ".otf": "file",
+            ".txt": "text"}[pathlib.Path(p).suffix]
 
 fileref = {}
-for p in sorted(set(APP_SOURCES + WIDGET_SOURCES + OTHER_FILES)):
+for p in sorted(set(APP_SOURCES + WIDGET_SOURCES + OTHER_FILES + RESOURCES)):
     fileref[p] = add(oid("ref", p), {"isa": "PBXFileReference", "lastKnownFileType": filetype(p), "path": p, "sourceTree": "<group>"})
 
 app_product = add(oid("product", "app"), {"isa": "PBXFileReference", "explicitFileType": "wrapper.application", "path": "MuonMonitor.app", "sourceTree": "BUILT_PRODUCTS_DIR", "includeInIndex": 0})
@@ -40,13 +49,18 @@ def group(name, paths):
     return add(oid("group", name), {"isa": "PBXGroup", "children": [fileref[p] for p in paths], "name": name, "sourceTree": "<group>"})
 
 groups = [group("App", [p for p in fileref if p.startswith("App/")]), group("Shared", [p for p in fileref if p.startswith("Shared/")]),
-          group("Widget", [p for p in fileref if p.startswith("Widget/")]), group("Configuration", ["Config.xcconfig", "README.md"])]
+          group("Widget", [p for p in fileref if p.startswith("Widget/")]), group("Resources", RESOURCES),
+          group("Configuration", ["Config.xcconfig"])]
 products = add(oid("group", "products"), {"isa": "PBXGroup", "children": [app_product, ext_product], "name": "Products", "sourceTree": "<group>"})
 main_group = add(oid("group", "main"), {"isa": "PBXGroup", "children": groups + [products], "sourceTree": "<group>"})
 
 def sources_phase(target, paths):
     files = [add(oid("build", target, p), {"isa": "PBXBuildFile", "fileRef": fileref[p]}) for p in paths]
     return add(oid("phase", target, "sources"), {"isa": "PBXSourcesBuildPhase", "buildActionMask": 2147483647, "files": files, "runOnlyForDeploymentPostprocessing": 0})
+
+def resources_phase(target, paths):
+    files = [add(oid("build", target, "res", p), {"isa": "PBXBuildFile", "fileRef": fileref[p]}) for p in paths]
+    return add(oid("phase", target, "PBXResourcesBuildPhase"), {"isa": "PBXResourcesBuildPhase", "buildActionMask": 2147483647, "files": files, "runOnlyForDeploymentPostprocessing": 0})
 
 def empty_phase(target, isa):
     return add(oid("phase", target, isa), {"isa": isa, "buildActionMask": 2147483647, "files": [], "runOnlyForDeploymentPostprocessing": 0})
@@ -72,7 +86,7 @@ ext_target = add(oid("target", "ext"), {
     "buildConfigurationList": configs("ext", {"PRODUCT_NAME": "MuonLive", "PRODUCT_BUNDLE_IDENTIFIER": "$(MUON_BUNDLE_ID).Live",
                                              "INFOPLIST_FILE": "Widget/Info.plist", "GENERATE_INFOPLIST_FILE": "NO", "CODE_SIGN_ENTITLEMENTS": "$(MUON_WIDGET_ENTITLEMENTS)",
                                              "LD_RUNPATH_SEARCH_PATHS": RUNPATH, "SKIP_INSTALL": "YES", "APPLICATION_EXTENSION_API_ONLY": "YES"}),
-    "buildPhases": [sources_phase("ext", WIDGET_SOURCES), empty_phase("ext", "PBXFrameworksBuildPhase"), empty_phase("ext", "PBXResourcesBuildPhase")]})
+    "buildPhases": [sources_phase("ext", WIDGET_SOURCES), empty_phase("ext", "PBXFrameworksBuildPhase"), resources_phase("ext", RESOURCES)]})
 
 project_id = oid("project")
 proxy = add(oid("proxy", "ext"), {"isa": "PBXContainerItemProxy", "containerPortal": project_id, "proxyType": 1, "remoteGlobalIDString": ext_target, "remoteInfo": "MuonLive"})
@@ -86,7 +100,7 @@ app_target = add(oid("target", "app"), {
     "buildConfigurationList": configs("app", {"PRODUCT_NAME": "MuonMonitor", "PRODUCT_BUNDLE_IDENTIFIER": "$(MUON_BUNDLE_ID)",
                                              "INFOPLIST_FILE": "App/Info.plist", "GENERATE_INFOPLIST_FILE": "NO", "CODE_SIGN_ENTITLEMENTS": "$(MUON_APP_ENTITLEMENTS)",
                                              "LD_RUNPATH_SEARCH_PATHS": RUNPATH, "SKIP_INSTALL": "NO"}),
-    "buildPhases": [sources_phase("app", APP_SOURCES), empty_phase("app", "PBXFrameworksBuildPhase"), empty_phase("app", "PBXResourcesBuildPhase"), embed]})
+    "buildPhases": [sources_phase("app", APP_SOURCES), empty_phase("app", "PBXFrameworksBuildPhase"), resources_phase("app", RESOURCES), embed]})
 
 objects[project_id] = {"isa": "PBXProject", "attributes": {"LastUpgradeCheck": "2700", "BuildIndependentTargetsInParallel": "YES",
                        "TargetAttributes": {app_target: {"CreatedOnToolsVersion": "27.0"}, ext_target: {"CreatedOnToolsVersion": "27.0"}}},
@@ -113,4 +127,4 @@ schemes = PROJ / "xcshareddata" / "xcschemes"
 schemes.mkdir(parents=True, exist_ok=True)
 (schemes / "MuonMonitor.xcscheme").write_text(scheme("MuonMonitor", []))
 (schemes / "MuonMonitor Demo.xcscheme").write_text(scheme("MuonMonitor Demo", ["--demo"]))
-print(f"{len(APP_SOURCES)} app sources, {len(WIDGET_SOURCES)} widget sources → {PROJ.name}")
+print(f"{len(APP_SOURCES)} app sources, {len(WIDGET_SOURCES)} widget sources, {len(RESOURCES)} resources → {PROJ.relative_to(ROOT.parent)}")
