@@ -99,10 +99,9 @@ struct RateWidgetView: View {
                     Spacer(minLength: 6)
                     VStack(alignment: .trailing, spacing: 3) {
                         if let p = s.pressure {
-                            Text(String(format: "%.1f", p)).foregroundStyle(Palette.ink) + Text(" hPa").foregroundStyle(Palette.pressure)
-                                + Text(s.pressureChange3h.map { $0 < -0.3 ? " ↓" : $0 > 0.3 ? " ↑" : "" } ?? "").foregroundStyle(Palette.muted)
+                            Text("\(Text(String(format: "%.1f", p)).foregroundStyle(Palette.ink))\(Text(" hPa").foregroundStyle(Palette.pressure))\(Text(s.pressureChange3h.map { $0 < -0.3 ? " ↓" : $0 > 0.3 ? " ↑" : "" } ?? "").foregroundStyle(Palette.muted))")
                         }
-                        if let t = s.temperature { Text(String(format: "%.1f", t)).foregroundStyle(Palette.ink) + Text(" °C").foregroundStyle(Palette.temperature) }
+                        if let t = s.temperature { Text("\(Text(String(format: "%.1f", t)).foregroundStyle(Palette.ink))\(Text(" °C").foregroundStyle(Palette.temperature))") }
                     }
                     .font(Typography.monoFixed(12)).lineLimit(1)
                 }

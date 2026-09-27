@@ -13,6 +13,13 @@ An iPhone app for the **gLOWCOST MuonP4** cosmic-ray muon telescope. It pairs wi
 
 <sub>Design mockups, rendered before the final review fixes and with fallback fonts. See <a href="design/">design/</a>.</sub>
 
+## Latest build update — September 27, 2026
+
+- Simulator and iPhone builds pass in Xcode; a fresh signed Debug iPhone build completed without warnings.
+- Widget and Live Activity text now uses interpolation compatible with iOS 26, preserving colours and relative-time display.
+- Debug builds skip stripping the already-signed widget extension during embedding. Release settings are unchanged; the project generator preserves the fix.
+- Core host tests pass. Live Bluetooth, GPS, Live Activity and Dynamic Island behaviour still need on-device verification.
+
 ## What gLowCost / MuonP4 is
 
 gLOWCOST is a low-cost muon telescope: plastic scintillator paddles read by SiPMs, coincidence logic in a small FPGA, and an ESP32-P4 board that counts, logs to an SD card and measures temperature and pressure. **MuonP4** is the detector's firmware and Bluetooth name. Every minute it reports the coincidence counts of three paddle pairs (CH⁰₁, CH⁰₂, CH¹₂), the triple, three raw inputs, and the environment. A minute only counts as *physics* when Wi-Fi is off and high voltage has settled.
@@ -63,7 +70,7 @@ open MuonMonitor/MuonMonitor.xcodeproj
 
 Free-account limits: reinstall from Xcode every 7 days; at most 3 such apps per device.
 
-After adding or removing Swift files or fonts, run `python3 tools/generate_project.py` again. Don't edit the project file by hand; build settings live in `MuonMonitor/Config.xcconfig`.
+After adding or removing Swift files or fonts, run `python3 tools/generate_project.py` again. Keep generated project settings in `tools/generate_project.py`; shared configuration lives in `MuonMonitor/Config.xcconfig` and personal signing overrides belong in the git-ignored `Config.local.xcconfig`.
 
 ## Pair with the detector
 
@@ -129,7 +136,7 @@ Hardware checklist:
 
 ## Known limitations
 
-- **Not yet compiled in Xcode.** The code was written and checked on Linux: the Swift core compiles and its tests pass, and every file parses. SwiftUI, ActivityKit and WidgetKit can't be type-checked there. Expect a few small fixes on the first Xcode build.
+- **On-device verification is pending.** Simulator and signed Debug iPhone builds pass, including SwiftUI, ActivityKit and WidgetKit compilation. Live detector communication and background behaviour still need testing on an iPhone.
 - **Radio diagnostics** needs a firmware `wifi_status` command. Until then the card says so. If a detector answers the command, its fields are shown.
 - The **FPGA bitstream name** shows only if the detector's status reports one. The current firmware does not.
 - iOS ends a Live Activity after about 8 hours. Restart it in Settings; logging continues either way.
@@ -138,7 +145,7 @@ Hardware checklist:
 
 ## Roadmap and open questions
 
-- First Xcode build and on-device test pass, then screenshots to replace the mockups.
+- Complete on-device testing, then capture screenshots to replace the mockups.
 - Firmware: `wifi_status` (channel, stations, TX power, whether the C6 is actually beaconing) and a bitstream name in `status`.
 - Decide whether the custom tab bar stays the default or Apple's system bar takes over (one switch).
 - Light mode: currently dark only by design.

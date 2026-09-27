@@ -84,7 +84,7 @@ struct LockScreenActivity: View {
                 PhasePill(phase: stale ? .overdue : state.phase)
                 Spacer(minLength: 4)
                 if let d = state.sampleDate {
-                    (Text(d, style: .relative) + Text(" ago")).font(Typography.monoFixed(11)).foregroundStyle(Palette.muted).lineLimit(1)
+                    Text("\(Text(d, style: .relative)) ago").font(Typography.monoFixed(11)).foregroundStyle(Palette.muted).lineLimit(1)
                 }
             }
             HStack(alignment: .bottom, spacing: 14) {
