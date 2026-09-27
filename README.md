@@ -25,15 +25,17 @@ Core tests and signed iPhone builds pass. The new firmware has not been flashed 
 *Current simulator capture with synthetic data. The images below are design mockups.*
 
 <p align="center">
-  <img src="design/mockup-now.png" height="420" alt="Now screen">
-  <img src="design/mockup-run-detail.png" height="420" alt="Run detail">
-  <img src="design/mockup-detector.png" height="420" alt="Detector screen">
+  <img src="design/renders/Main.png" height="420" alt="Now screen">
+  <img src="design/renders/RunDetail.png" height="420" alt="Run detail">
+  <img src="design/renders/Detector.png" height="420" alt="Detector screen">
 </p>
 <p align="center">
-  <img src="design/mockup-lockscreen-island-widgets-track.png" width="760" alt="Lock Screen Live Activity, Dynamic Island, widgets and Control Center">
+  <img src="design/renders/LockScreen.png" height="420" alt="Lock Screen Live Activity">
+  <img src="design/renders/Island.png" height="420" alt="Dynamic Island states">
+  <img src="design/renders/Widgets.png" height="420" alt="Home widgets and Control Center">
 </p>
 
-<sub>Design mockups, rendered before the final review fixes and with fallback fonts. See <a href="design/">design/</a>.</sub>
+<sub>Rendered from the design canvas (September 27, 2026) with placeholder data. The Lock Screen and Dynamic Island match the current Swift layout; other screens may lag the app (for example, the app no longer shows a logging banner above the tab bar). All renders are in <a href="design/renders/">design/renders/</a>.</sub>
 
 ## Live logging and layout update — September 27, 2026
 

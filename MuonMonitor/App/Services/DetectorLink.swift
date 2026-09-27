@@ -57,8 +57,10 @@ final class DetectorLink: NSObject, CBCentralManagerDelegate, CBPeripheralDelega
     func disconnect() {
         wantsConnection = false
         finishControl(.failure(LinkError("Logging stopped")))
-        central.stopScan()
-        if let p = peripheral { central.cancelPeripheralConnection(p) }
+        if central.state == .poweredOn {
+            central.stopScan()
+            if let p = peripheral { central.cancelPeripheralConnection(p) }
+        }
         peripheral = nil; sampleChar = nil; commandChar = nil; responseChar = nil
         readPending = false; controlsReady = false; state = .idle
     }
@@ -69,7 +71,7 @@ final class DetectorLink: NSObject, CBCentralManagerDelegate, CBPeripheralDelega
         if on, central.state == .poweredOn {
             nearby = []
             central.scanForPeripherals(withServices: [Self.service], options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
-        } else if !on, !(wantsConnection && peripheral == nil) {
+        } else if !on, central.state == .poweredOn, !(wantsConnection && peripheral == nil) {
             central.stopScan()
         }
     }
@@ -87,6 +89,7 @@ final class DetectorLink: NSObject, CBCentralManagerDelegate, CBPeripheralDelega
         if let p = peripheral {
             if p.state == .connected { p.discoverServices([Self.service]); return }
             if p.state == .connecting { return }
+            attach(p); return
         }
         if let id = knownDetector, let p = central.retrievePeripherals(withIdentifiers: [id]).first {
             attach(p); return
@@ -117,9 +120,10 @@ final class DetectorLink: NSObject, CBCentralManagerDelegate, CBPeripheralDelega
         guard wantsConnection else { return }
         peripheral = p; p.delegate = self
         readPending = false
-        if p.state == .connected { state = .connected; p.discoverServices([Self.service]) }
-        else if p.state == .disconnected { state = .connecting; central.connect(p, options: nil) }
-        else { state = .connecting }
+        // Restoration runs before the manager is powered on; Core Bluetooth rejects
+        // commands until then, so centralManagerDidUpdateState resumes via discover().
+        if p.state == .connected { state = .connected; if c.state == .poweredOn { p.discoverServices([Self.service]) } }
+        else { state = .connecting; discover() }
     }
 
     func centralManager(_ c: CBCentralManager, didDiscover p: CBPeripheral, advertisementData ad: [String: Any], rssi RSSI: NSNumber) {
@@ -159,7 +163,9 @@ final class DetectorLink: NSObject, CBCentralManagerDelegate, CBPeripheralDelega
         sampleChar = nil; commandChar = nil; responseChar = nil; readPending = false; controlsReady = false
         finishControl(.failure(LinkError("Bluetooth connection lost")))
         onDisconnect?()
-        if wantsConnection { state = .connecting; central.connect(p, options: nil) } else { state = .idle }
+        guard wantsConnection else { state = .idle; return }
+        // A disconnect caused by Bluetooth turning off reconnects from centralManagerDidUpdateState.
+        if central.state == .poweredOn { state = .connecting; central.connect(p, options: nil) }
     }
 
     func peripheral(_ p: CBPeripheral, didReadRSSI RSSI: NSNumber, error: Error?) { if error == nil { rssi = RSSI.intValue } }

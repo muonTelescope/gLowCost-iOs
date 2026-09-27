@@ -18,3 +18,7 @@ The interactive mockup is a Claude artifact: <https://claude.ai/artifact/4QBP3ZZ
 ## Live Activity mockups (current)
 
 `live-activity/LockScreen.dc.html` and `live-activity/Island.dc.html` are the design-canvas sources for the Lock Screen Live Activity and Dynamic Island, matched to `MuonMonitor/Widget/LiveActivityWidget.swift` as of September 27, 2026: rate with `/min`, a full-height 30-minute pair-line plot with no caption, and one row with the channel counts (colour over/underlined CH) and pressure · temperature. Plot values are placeholders. The PNG mockups above predate this layout.
+
+## Renders
+
+`renders/*.png` are 2× renders of every design-canvas board (September 27, 2026), made in headless Chromium from the canvas sources. They replace the older `mockup-*.png` images in the main README.
