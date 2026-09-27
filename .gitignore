@@ -1,0 +1,35 @@
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.xcarchive
+.swiftpm/
+.build/
+Package.resolved
+timeline.xctimeline
+playground.xcworkspace
+
+# Personal signing settings (team ID, bundle ID)
+MuonMonitor/Config.local.xcconfig
+
+# macOS / editors
+.DS_Store
+.AppleDouble
+*.swp
+.vscode/
+.idea/
+
+# Never commit bundles, archives or device dumps
+*.zip
+*.bundle
+*.bin
+*.tar.gz
+__pycache__/
