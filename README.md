@@ -14,7 +14,7 @@ Simulator UI tests cover both the system and custom bars: Now-only logging, bott
 - **GPS continues during Bluetooth gaps.** Retained timestamped fixes can be matched to recovered measurements. Assign a stationary location to a selected time range where GPS is missing, including minutes recovered later.
 - **Both copies can carry location:** send GPS/manual observations back to the detector's SD companion file with acknowledged, repeat-safe uploads. The detector always operates without a phone.
 - **Full measurement context:** preserve DAC0–7, HV command/state, humidity, UTC and monotonic time, sync metadata, raw/physics cumulative counts, radio flags, firmware revision and FPGA hash in imports and exports.
-- **Clearer layouts:** all-pair run charts, whole-run statistics, a session sum, unobstructed bottom controls, and matching Lock Screen/Dynamic Island legends. Pressure and temperature units have their own row. The app icon uses the existing muon glyph.
+- **Clearer layouts:** all-pair run charts, whole-run statistics, a session sum, unobstructed bottom controls, and matching Lock Screen/Dynamic Island legends. Pressure and temperature (with units) share the channel-count row. The app icon uses the existing muon glyph.
 
 The deployment is **v2.2 with three connected paddles**, fourth channel unconnected. See [schema 5, examples and scientific limits](docs/RECORD-SCHEMA-5.md). Extended metadata and GPS-on-SD require the matching firmware update; the existing version-4 BLE layout remains compatible. No GPX or Health imports are required.
 
@@ -41,7 +41,7 @@ Core tests and signed iPhone builds pass. The new firmware has not been flashed 
 - The Now screen has simpler environment labels, compact exposure units and an explicit session sum. Counting statistics use the entire run's physics minutes.
 - Missing minutes trigger automatic SD recovery when Bluetooth is available, with retries after failed transfers. Imports refresh the last-hour chart, Live Activity and widgets.
 - GPS remains active while logging, including Bluetooth outages when iOS permissions allow. Timestamped fixes are retained locally per run and matched to recovered minutes; a current location is never substituted for an old missing fix.
-- The Home Screen icon uses the existing muon glyph. Live Activity environment readings have their own row.
+- The Home Screen icon uses the existing muon glyph.
 
 These updates require on-device checks for scrolling, background GPS and reconnection recovery.
 
@@ -51,6 +51,12 @@ These updates require on-device checks for scrolling, background GPS and reconne
 - Widget and Live Activity text now uses interpolation compatible with iOS 26, preserving colours and relative-time display.
 - Debug builds skip stripping the already-signed widget extension during embedding. Release settings are unchanged; the project generator preserves the fix.
 - Core host tests pass. Live Bluetooth, GPS, Live Activity and Dynamic Island behaviour still need on-device verification.
+
+## Live Activity and run chart update — September 27, 2026
+
+- **Lock Screen Live Activity and expanded Dynamic Island** share one compact layout: rate with `/min` beside it, a wider and taller 30-minute pair-line plot, and one row with the three channel counts on the left and pressure · temperature (units kept) on the right. The sample age is right-aligned; Stop sits on its own row in the Island.
+- **Run rate chart:** the legend uses the same colour over/underlined CH labels as the Live Activity; Σ is enlarged to match CH with its paddle digits; the y-axis fits the rates and error bars with 8% headroom instead of rounding up to the next round number.
+- Not yet compiled in this update's environment; layout on the user's iPhone still needs checking.
 
 ## What gLowCost / MuonP4 is
 

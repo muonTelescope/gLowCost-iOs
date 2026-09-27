@@ -14,7 +14,7 @@ Build and install: see the [README](../README.md#build-and-run). The design mock
 - **Now** shows the last completed minute as muon tracks, the three pair counts, the last hour (one bar per minute; grey dashes are missed minutes), pressure with its 3-hour trend, detector temperature and physics-only session totals.
 - The **logging status card on Now** shows the run name, elapsed time and stop button. It scrolls with the page and does not appear on the other tabs.
 - Tap the already-selected tab to return to the top of the current page. Both tab-bar styles leave scroll room below the final controls.
-- Lock the phone. The **Live Activity** shows the count, the last 30 minutes, pairs, pressure and temperature, and a **Stop logging** button. The **Dynamic Island** shows the count, a countdown while the detector is in setup, and an overdue state once no minute has arrived for the time set under Settings › Alerts (default 3 minutes).
+- Lock the phone. The **Live Activity** shows the count per minute, a plot of the three pairs over the last 30 minutes, and one row with the pair counts plus pressure and temperature. Long-press the **Dynamic Island** for the same view and a **Stop** button. The **Dynamic Island** shows the count, a countdown while the detector is in setup, and an overdue state once no minute has arrived for the time set under Settings › Alerts (default 3 minutes).
 - Before physics starts the detector keeps Wi‑Fi on for 120 s. **Detector › Start physics run** skips the wait.
 
 ## Names and tags
@@ -25,6 +25,7 @@ Build and install: see the [README](../README.md#build-and-run). The design mock
 ## Charts and tracks
 
 - Rates are raw counts per minute, divided by the real integration time. Choose 1, 10, 30 or 60-minute bins; bands show ±1σ counting error. Gaps stay gaps.
+- The legend marks each series with a coloured line above and below CH. The vertical axis fits the data with a little headroom.
 - Dashed markers show events: reboots, Wi‑Fi and HV changes, missed minutes, SD fills, jumps.
 - Drag on a chart to read a bin; the map marker moves to where the detector was at that time.
 - The map joins one GPS fix per minute, coloured by rate. A stationary run shows a small cluster inside the typical GPS accuracy circle. Runs that change altitude also show an altitude chart; muon rates rise with altitude.
