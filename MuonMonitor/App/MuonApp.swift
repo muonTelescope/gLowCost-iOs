@@ -84,8 +84,7 @@ enum AppTab: String, CaseIterable, Identifiable {
 struct RootView: View {
     @Environment(AppModel.self) private var app
     @SceneStorage("tab") private var tab: AppTab = .now
-    @State private var showPair = false
-    /// Debug switch: Apple's iOS 26 tab bar and bottom accessory instead of the
+    /// Debug switch: Apple's iOS 26 tab bar instead of the
     /// custom chamfered bars. `defaults write <bundle id> useSystemTabBar -bool YES`,
     /// or the toggle under Settings › Debug in Debug builds.
     @AppStorage("useSystemTabBar") private var useSystemTabBar = false
@@ -94,7 +93,6 @@ struct RootView: View {
         Group {
             if useSystemTabBar { systemTabs } else { customTabs }
         }
-        .sheet(isPresented: $showPair) { PairView() }
         .onOpenURL { url in if let host = url.host(), let t = AppTab(rawValue: host) { tab = t } }
     }
 
@@ -113,12 +111,12 @@ struct RootView: View {
                 Tab(t.title, systemImage: t.symbol, value: t) { screen(t) }
             }
         }
-        .tabBarMinimizeBehavior(.onScrollDown)
-        .tabViewBottomAccessory { LoggingBar(showPair: $showPair, floating: false) }
+        .tabBarMinimizeBehavior(.never)
+        .background(SystemTabReselectObserver { TabScrollTop.request(tab) })
+        .contentMargins(.bottom, 88, for: .scrollContent)
     }
 
-    /// Custom floating bars. Each screen keeps its own navigation state inside
-    /// the (hidden) system TabView; a clear inset reserves room under the content.
+    /// Keep navigation state per tab; reserve the custom bar's actual height.
     private var customTabs: some View {
         TabView(selection: $tab) {
             ForEach(AppTab.allCases) { t in
@@ -129,24 +127,10 @@ struct RootView: View {
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            FloatingBars(tab: $tab, showPair: $showPair)
+            ChamferTabBar(selection: $tab).padding(.horizontal, 12).padding(.bottom, 4)
         }
+        .contentMargins(.bottom, 88, for: .scrollContent)
         .ignoresSafeArea(.keyboard, edges: .bottom)
-    }
-}
-
-/// Logging bar stacked above the tab bar, both frosted and chamfered.
-struct FloatingBars: View {
-    @Binding var tab: AppTab
-    @Binding var showPair: Bool
-
-    var body: some View {
-        VStack(spacing: 8) {
-            LoggingBar(showPair: $showPair, floating: true)
-            ChamferTabBar(selection: $tab)
-        }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 4)
     }
 }
 
@@ -156,7 +140,7 @@ struct ChamferTabBar: View {
         HStack(spacing: 4) {
             ForEach(AppTab.allCases) { t in
                 let on = t == selection
-                Button { selection = t } label: {
+                Button { if selection == t { TabScrollTop.request(t) } else { selection = t } } label: {
                     VStack(spacing: 3) {
                         Image(systemName: t.symbol).font(.system(size: 17, weight: .medium))
                         Text(t.title).font(Typography.raleway(11, .semibold, relativeTo: .caption2)).lineLimit(1).minimumScaleFactor(0.8)
@@ -168,6 +152,7 @@ struct ChamferTabBar: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("tab-" + t.rawValue)
                 .accessibilityLabel(t.title)
                 .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
             }
@@ -179,7 +164,7 @@ struct ChamferTabBar: View {
     }
 }
 
-/// Logging state and one start/stop control, on every tab.
+/// In-page logging status and stop control, shown only on Now.
 struct LoggingBar: View {
     @Environment(AppModel.self) private var app
     @Binding var showPair: Bool
@@ -212,6 +197,8 @@ struct LoggingBar: View {
         }
         .padding(.leading, 14).padding(.trailing, 8).padding(.vertical, 8)
         .modifier(OptionalGlass(on: floating))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("logging-status")
     }
 }
 

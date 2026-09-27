@@ -12,7 +12,9 @@ struct NowView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
+                    Color.clear.frame(height: 1).id(TabScrollTop.anchor(.now)).accessibilityHidden(true)
                     header
+                    if app.logging { LoggingBar(showPair: $showPair, floating: true) }
                     if !app.logging { idleCard } else {
                         hero
                         pairTiles
@@ -25,6 +27,7 @@ struct NowView: View {
                 }
                 .padding(.horizontal, 20).padding(.bottom, 24)
             }
+            .tabScrollTop(.now)
             .background(Palette.background)
             .navigationTitle("Now")
             .toolbar {

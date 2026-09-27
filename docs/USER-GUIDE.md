@@ -12,7 +12,8 @@ Build and install: see the [README](../README.md#build-and-run). The design mock
 ## During a run
 
 - **Now** shows the last completed minute as muon tracks, the three pair counts, the last hour (one bar per minute; grey dashes are missed minutes), pressure with its 3-hour trend, detector temperature and physics-only session totals.
-- The **logging bar** above the tab bar shows the run name and elapsed time on every tab, with a stop button.
+- The **logging status card on Now** shows the run name, elapsed time and stop button. It scrolls with the page and does not appear on the other tabs.
+- Tap the already-selected tab to return to the top of the current page. Both tab-bar styles leave scroll room below the final controls.
 - Lock the phone. The **Live Activity** shows the count, the last 30 minutes, pairs, pressure and temperature, and a **Stop logging** button. The **Dynamic Island** shows the count, a countdown while the detector is in setup, and an overdue state once no minute has arrived for the time set under Settings › Alerts (default 3 minutes).
 - Before physics starts the detector keeps Wi‑Fi on for 120 s. **Detector › Start physics run** skips the wait.
 

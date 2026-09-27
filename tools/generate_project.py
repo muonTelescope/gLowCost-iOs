@@ -26,6 +26,7 @@ WIDGET_SHARED = [p for p in swift("Shared") if p not in WIDGET_EXCLUDED]
 RESOURCES = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "Resources").rglob("*") if p.is_file() and not p.name.startswith("."))
 APP_SOURCES = swift("App") + swift("Shared")
 WIDGET_SOURCES = swift("Widget") + WIDGET_SHARED
+UI_TEST_SOURCES = ["../tests/UITests/TabNavigationTests.swift"]
 OTHER_FILES = ["Assets.xcassets", "App/Info.plist", "Widget/Info.plist", "App/App.entitlements", "Widget/Widget.entitlements", "Config.xcconfig"]
 
 objects = {}
@@ -39,7 +40,7 @@ def filetype(p):
             ".txt": "text", ".xcassets": "folder.assetcatalog"}[pathlib.Path(p).suffix]
 
 fileref = {}
-for p in sorted(set(APP_SOURCES + WIDGET_SOURCES + OTHER_FILES + RESOURCES)):
+for p in sorted(set(APP_SOURCES + WIDGET_SOURCES + OTHER_FILES + RESOURCES + UI_TEST_SOURCES)):
     fileref[p] = add(oid("ref", p), {"isa": "PBXFileReference", "lastKnownFileType": filetype(p), "path": p, "sourceTree": "<group>"})
 
 app_product = add(oid("product", "app"), {"isa": "PBXFileReference", "explicitFileType": "wrapper.application", "path": "MuonMonitor.app", "sourceTree": "BUILT_PRODUCTS_DIR", "includeInIndex": 0})
@@ -68,7 +69,7 @@ def empty_phase(target, isa):
 xcconfig = fileref["Config.xcconfig"]
 COMMON = {"SDKROOT": "iphoneos", "IPHONEOS_DEPLOYMENT_TARGET": "26.0", "SWIFT_VERSION": "5.0", "TARGETED_DEVICE_FAMILY": "1",
           "CODE_SIGN_STYLE": "Automatic", "DEVELOPMENT_TEAM": "$(MUON_TEAM)", "CLANG_ENABLE_MODULES": "YES",
-          "SWIFT_EMIT_LOC_STRINGS": "YES", "ENABLE_USER_SCRIPT_SANDBOXING": "YES", "CURRENT_PROJECT_VERSION": "3", "MARKETING_VERSION": "2.1"}
+          "SWIFT_EMIT_LOC_STRINGS": "YES", "ENABLE_USER_SCRIPT_SANDBOXING": "YES", "CURRENT_PROJECT_VERSION": "4", "MARKETING_VERSION": "2.1"}
 DEBUG = {"SWIFT_ACTIVE_COMPILATION_CONDITIONS": "DEBUG", "SWIFT_OPTIMIZATION_LEVEL": "-Onone", "DEBUG_INFORMATION_FORMAT": "dwarf", "ONLY_ACTIVE_ARCH": "YES", "ENABLE_TESTABILITY": "YES", "COPY_PHASE_STRIP": "NO"}
 RELEASE = {"SWIFT_ACTIVE_COMPILATION_CONDITIONS": "", "SWIFT_OPTIMIZATION_LEVEL": "-O", "DEBUG_INFORMATION_FORMAT": "dwarf-with-dsym"}
 
@@ -102,11 +103,23 @@ app_target = add(oid("target", "app"), {
                                              "LD_RUNPATH_SEARCH_PATHS": RUNPATH, "SKIP_INSTALL": "NO", "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon"}),
     "buildPhases": [sources_phase("app", APP_SOURCES), empty_phase("app", "PBXFrameworksBuildPhase"), resources_phase("app", RESOURCES + ["Assets.xcassets"]), embed]})
 
+ui_product = add(oid("product", "uitests"), {"isa": "PBXFileReference", "explicitFileType": "wrapper.cfbundle", "path": "MuonUITests.xctest", "sourceTree": "BUILT_PRODUCTS_DIR"})
+objects[products]["children"].append(ui_product)
+objects[main_group]["children"].append(group("UI Tests", UI_TEST_SOURCES))
+ui_proxy = add(oid("proxy", "app"), {"isa": "PBXContainerItemProxy", "containerPortal": project_id, "proxyType": 1, "remoteGlobalIDString": app_target, "remoteInfo": "MuonMonitor"})
+ui_dependency = add(oid("dependency", "app"), {"isa": "PBXTargetDependency", "target": app_target, "targetProxy": ui_proxy})
+ui_target = add(oid("target", "uitests"), {
+    "isa": "PBXNativeTarget", "name": "MuonUITests", "productName": "MuonUITests", "productReference": ui_product,
+    "productType": "com.apple.product-type.bundle.ui-testing", "buildRules": [], "dependencies": [ui_dependency],
+    "buildConfigurationList": configs("uitests", {"PRODUCT_NAME": "MuonUITests", "PRODUCT_BUNDLE_IDENTIFIER": "$(MUON_BUNDLE_ID).UITests",
+        "GENERATE_INFOPLIST_FILE": "YES", "TEST_TARGET_NAME": "MuonMonitor", "LD_RUNPATH_SEARCH_PATHS": RUNPATH, "SKIP_INSTALL": "YES"}),
+    "buildPhases": [sources_phase("uitests", UI_TEST_SOURCES), empty_phase("uitests", "PBXFrameworksBuildPhase"), resources_phase("uitests", [])]})
+
 objects[project_id] = {"isa": "PBXProject", "attributes": {"LastUpgradeCheck": "2700", "BuildIndependentTargetsInParallel": "YES",
                        "TargetAttributes": {app_target: {"CreatedOnToolsVersion": "27.0"}, ext_target: {"CreatedOnToolsVersion": "27.0"}}},
                        "buildConfigurationList": configs("project", {}), "compatibilityVersion": "Xcode 14.0", "developmentRegion": "en",
                        "hasScannedForEncodings": 0, "knownRegions": ["en", "Base"], "mainGroup": main_group, "productRefGroup": products,
-                       "projectDirPath": "", "projectRoot": "", "targets": [app_target, ext_target]}
+                       "projectDirPath": "", "projectRoot": "", "targets": [app_target, ext_target, ui_target]}
 
 def plist(v):
     if isinstance(v, dict): return "{" + "".join(f"{json.dumps(k)} = {plist(x)};" for k, x in v.items()) + "}"
@@ -118,9 +131,11 @@ PROJ.mkdir(exist_ok=True)
 
 def scheme(name, args):
     ref = f'<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{app_target}" BuildableName="MuonMonitor.app" BlueprintName="MuonMonitor" ReferencedContainer="container:MuonMonitor.xcodeproj"/>'
+    test_ref = f'<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{ui_target}" BuildableName="MuonUITests.xctest" BlueprintName="MuonUITests" ReferencedContainer="container:MuonMonitor.xcodeproj"/>'
+    test_action = f'<TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES"><Testables><TestableReference skipped="NO">{test_ref}</TestableReference></Testables></TestAction>'
     launch_args = "".join(f'<CommandLineArgument argument="{a}" isEnabled="YES"/>' for a in args)
     return f'''<?xml version="1.0" encoding="UTF-8"?>
-<Scheme LastUpgradeVersion="2700" version="1.7"><BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries><BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">{ref}</BuildActionEntry></BuildActionEntries></BuildAction><LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugDocumentVersioning="YES" debugServiceExtension="internal" allowLocationSimulation="YES"><BuildableProductRunnable runnableDebuggingMode="0">{ref}</BuildableProductRunnable>{"<CommandLineArguments>" + launch_args + "</CommandLineArguments>" if args else ""}</LaunchAction><ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" savedToolIdentifier="" useCustomWorkingDirectory="NO" debugDocumentVersioning="YES"/><AnalyzeAction buildConfiguration="Debug"/><ArchiveAction buildConfiguration="Release" revealArchiveInOrganizer="YES"/></Scheme>
+<Scheme LastUpgradeVersion="2700" version="1.7"><BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries><BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">{ref}</BuildActionEntry></BuildActionEntries></BuildAction>{test_action}<LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugDocumentVersioning="YES" debugServiceExtension="internal" allowLocationSimulation="YES"><BuildableProductRunnable runnableDebuggingMode="0">{ref}</BuildableProductRunnable>{"<CommandLineArguments>" + launch_args + "</CommandLineArguments>" if args else ""}</LaunchAction><ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" savedToolIdentifier="" useCustomWorkingDirectory="NO" debugDocumentVersioning="YES"/><AnalyzeAction buildConfiguration="Debug"/><ArchiveAction buildConfiguration="Release" revealArchiveInOrganizer="YES"/></Scheme>
 '''
 
 schemes = PROJ / "xcshareddata" / "xcschemes"

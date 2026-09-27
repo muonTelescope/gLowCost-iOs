@@ -25,6 +25,7 @@ struct RunDetailView: View {
         let bins = Binning.bins(recs, channel: channel, minutes: binMinutes)
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
+                    Color.clear.frame(height: 1).id(TabScrollTop.anchor(.runs)).accessibilityHidden(true)
                 header
                 stats(recs)
                 controls
@@ -41,6 +42,7 @@ struct RunDetailView: View {
             }
             .padding(.horizontal, 20).padding(.bottom, 30)
         }
+            .tabScrollTop(.runs)
         .background(Palette.background)
         .navigationTitle(run.name).navigationBarTitleDisplayMode(.inline)
         .toolbar {

@@ -37,6 +37,9 @@ struct RunsView: View {
     var body: some View {
         NavigationStack {
             List {
+                Color.clear.frame(height: 1).id(TabScrollTop.anchor(.runs))
+                    .listRowInsets(EdgeInsets()).listRowSeparator(.hidden).listRowBackground(Color.clear)
+                    .accessibilityHidden(true)
                 if !runs.isEmpty {
                     Text(summary).capsLabel()
                         .listRowBackground(Color.clear).listRowSeparator(.hidden)
@@ -80,6 +83,7 @@ struct RunsView: View {
                         .listRowBackground(Color.clear)
                 }
             }
+            .tabScrollTop(.runs)
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(Palette.background)

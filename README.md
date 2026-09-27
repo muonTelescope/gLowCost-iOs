@@ -2,6 +2,12 @@
 
 An iPhone app for the **gLOWCOST MuonP4** cosmic-ray muon telescope. It pairs with the detector over Bluetooth, logs every minute of counts with pressure, temperature and GPS, keeps a history of runs, and shows the live rate on the Lock Screen, in the Dynamic Island and in widgets.
 
+## Navigation update — 2.1 build 4
+
+Logging status and the stop button now live inside **Now**, not above the bottom tabs. Both tab-bar styles reserve extra scroll room so the final controls remain visible. Tap the selected tab again to scroll the current page to the top without discarding its navigation or edits.
+
+Simulator UI tests cover both the system and custom bars: Now-only logging, bottom control clearance and repeat-tab scrolling. [Bottom-control screenshot](docs/screenshots/system-tabs-bottom-simulator.png).
+
 ## New in 2.1 — recovery and measurement metadata
 
 - **Reconnect safely:** verify and save each recovered minute individually, retry missing SD records without blocking later records, and include previous boot journals. Recovered data fill the live charts and widgets.

@@ -25,6 +25,7 @@ struct SettingsView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
+                    Color.clear.frame(height: 1).id(TabScrollTop.anchor(.settings)).accessibilityHidden(true)
                     if app.demo { demoCard }
 
                     SectionLabel("Mode")
@@ -61,7 +62,7 @@ struct SettingsView: View {
                                 .buttonStyle(.plain)
                         }
                     }.card(padding: 0)
-                    footnote("Every minute stores the latest GPS fix if it is less than 2 minutes old. The detector never receives your location.")
+                    footnote("Every minute stores the latest GPS fix if it is less than 2 minutes old. Available GPS fixes sync to the detector’s SD card while connected; missing locations can be assigned manually in Runs.")
 
                     SectionLabel("Lock Screen")
                     VStack(spacing: 0) {
@@ -121,6 +122,7 @@ struct SettingsView: View {
                 // Review fix 7: content ends right after the last card.
                 .padding(.horizontal, 20).padding(.bottom, 8)
             }
+            .tabScrollTop(.settings)
             .background(Palette.background)
             .navigationTitle("Settings")
             .fileImporter(isPresented: $choosingFolder, allowedContentTypes: [.folder]) { result in

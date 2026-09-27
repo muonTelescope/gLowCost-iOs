@@ -17,6 +17,7 @@ struct DetectorView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
+                    Color.clear.frame(height: 1).id(TabScrollTop.anchor(.detector)).accessibilityHidden(true)
                     connectionCard
                     if app.link.state == .connected, let t {
                         checklist(t)
@@ -36,9 +37,10 @@ struct DetectorView: View {
                     }
                     expertLink
                 }
-                // Review fix 7: no oversized bottom padding; the floating bars reserve their own inset.
+                // Extra scroll-content margins are supplied by the selected tab-bar style.
                 .padding(.horizontal, 20).padding(.bottom, 8)
             }
+            .tabScrollTop(.detector)
             .background(Palette.background)
             .navigationTitle("Detector")
             .refreshable { await refresh() }

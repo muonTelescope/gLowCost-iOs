@@ -37,6 +37,7 @@ struct ExpertConsoleView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                    Color.clear.frame(height: 1).id(TabScrollTop.anchor(.detector)).accessibilityHidden(true)
                 // Warning: pink is allowed here, it is an alert about destructive changes.
                 Label("Changes stop the current minute. It is discarded, high voltage settles for 10 s and counting restarts.", systemImage: "exclamationmark.triangle")
                     .font(Typography.footnote).foregroundStyle(Palette.alert)
@@ -60,6 +61,7 @@ struct ExpertConsoleView: View {
             }
             .padding(.horizontal, 20).padding(.bottom, 8)
         }
+            .tabScrollTop(.detector)
         .background(Palette.background)
         .navigationTitle("Expert console")
         .disabled(busy || !app.link.controlsReady)
