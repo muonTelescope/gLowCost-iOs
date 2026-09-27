@@ -3,20 +3,25 @@ import WidgetKit
 import SwiftUI
 import AppIntents
 
+// Lock Screen Live Activity and Dynamic Island, in the violet & phosphor palette.
+// Widgets always render dark (the ground colour), matching the dark-only app.
+// Sizes here use fixed fonts: Live Activities do not grow with Dynamic Type
+// beyond what the system allows, and fixed sizes keep channel digits ≥ 11 pt.
+
 struct MuonLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: MuonActivity.self) { context in
             LockScreenActivity(state: context.state, stale: context.isStale)
-                .activityBackgroundTint(Color(UIColor(hex: 0x141A26)).opacity(0.72))
-                .activitySystemActionForegroundColor(.white)
+                .activityBackgroundTint(Palette.ground.opacity(0.85))
+                .activitySystemActionForegroundColor(Palette.ink)
                 .environment(\.colorScheme, .dark)
         } dynamicIsland: { context in
             let s = context.state, stale = context.isStale || s.phase == .overdue
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     HStack(spacing: 6) {
-                        Image(systemName: "line.diagonal").foregroundStyle(Palette.accentSoft)
-                        Text("MuonP4").font(.subheadline.weight(.semibold))
+                        MuonMark(size: 16, color: Palette.lilac)
+                        Text("MuonP4").font(Typography.raleway(15, .bold)).foregroundStyle(Palette.ink)
                     }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
@@ -25,34 +30,43 @@ struct MuonLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack(alignment: .lastTextBaseline) {
-                            Text(s.total.map(String.init) ?? "—").font(.system(size: 50, weight: .medium, design: .rounded)).monospacedDigit()
-                            Text("/ min").font(.footnote).foregroundStyle(.secondary)
+                            Text(s.total.map(String.init) ?? "—").font(Typography.monoFixed(46, .medium)).foregroundStyle(Palette.ink)
+                                .lineLimit(1).minimumScaleFactor(0.6)
+                            Text("/ min").font(Typography.monoFixed(13)).foregroundStyle(Palette.data)
                             Spacer()
                             PairColumn(pairs: s.pairs)
                         }
                         HStack {
-                            EnvLine(state: s).font(.caption)
+                            EnvLine(state: s)
                             Spacer()
-                            Button(intent: StopLoggingIntent()) { Text("Stop logging").font(.caption.weight(.semibold)) }
-                                .tint(.white.opacity(0.2))
+                            Button(intent: StopLoggingIntent()) {
+                                Text("Stop logging").font(Typography.raleway(12, .bold)).foregroundStyle(Palette.ink)
+                            }
+                            .tint(Palette.violet.opacity(0.35))
                         }
                     }
                 }
             } compactLeading: {
-                Image(systemName: stale ? "antenna.radiowaves.left.and.right.slash" : s.phase == .physics ? "line.diagonal" : "clock")
-                    .foregroundStyle(stale ? Palette.danger : s.phase == .physics ? Palette.accentSoft : Palette.setup)
+                if stale {
+                    Image(systemName: "antenna.radiowaves.left.and.right.slash").foregroundStyle(Palette.alert)
+                } else if s.phase == .physics {
+                    MuonMark(size: 14, color: Palette.lilac)
+                } else {
+                    Image(systemName: "clock").foregroundStyle(Palette.setup)
+                }
             } compactTrailing: {
                 if stale {
-                    Text(s.sampleDate ?? Date(), style: .relative).monospacedDigit().foregroundStyle(Palette.danger).frame(maxWidth: 50)
+                    Text(s.sampleDate ?? Date(), style: .relative).font(Typography.monoFixed(13)).foregroundStyle(Palette.alert).frame(maxWidth: 50)
                 } else if s.phase != .physics, let ends = s.setupEnds, ends > Date() {
-                    Text(timerInterval: Date()...ends, countsDown: true).monospacedDigit().foregroundStyle(Palette.setup).frame(maxWidth: 44)
+                    Text(timerInterval: Date()...ends, countsDown: true).font(Typography.monoFixed(13)).foregroundStyle(Palette.setup).frame(maxWidth: 44)
                 } else {
-                    Text(s.total.map(String.init) ?? "—").monospacedDigit().foregroundStyle(Palette.accentSoft)
+                    Text(s.total.map(String.init) ?? "—").font(Typography.monoFixed(14, .medium)).foregroundStyle(Palette.data)
                 }
             } minimal: {
-                Text(stale ? "—" : s.total.map(String.init) ?? "—").monospacedDigit().foregroundStyle(stale ? Palette.danger : Palette.accentSoft)
+                Text(stale ? "—" : s.total.map(String.init) ?? "—").font(Typography.monoFixed(13, .medium))
+                    .foregroundStyle(stale ? Palette.alert : Palette.data)
             }
-            .keylineTint(Palette.accent)
+            .keylineTint(Palette.violet)
             .widgetURL(URL(string: "muonp4://now"))
         }
     }
@@ -61,46 +75,69 @@ struct MuonLiveActivity: Widget {
 struct LockScreenActivity: View {
     let state: MuonActivity.ContentState
     let stale: Bool
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Image(systemName: "line.diagonal").foregroundStyle(Palette.accentSoft)
-                Text("MuonP4").font(.subheadline.weight(.semibold))
+                MuonMark(size: 15, color: Palette.lilac)
+                Text("MuonP4").font(Typography.raleway(15, .bold)).foregroundStyle(Palette.ink)
                 PhasePill(phase: stale ? .overdue : state.phase)
-                Spacer()
-                if let d = state.sampleDate { (Text(d, style: .relative) + Text(" ago")).font(.caption).foregroundStyle(.secondary) }
+                Spacer(minLength: 4)
+                if let d = state.sampleDate {
+                    (Text(d, style: .relative) + Text(" ago")).font(Typography.monoFixed(11)).foregroundStyle(Palette.muted).lineLimit(1)
+                }
             }
             HStack(alignment: .bottom, spacing: 14) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(stale ? "—" : state.total.map(String.init) ?? "—").font(.system(size: 44, weight: .medium, design: .rounded)).monospacedDigit()
-                    Text("coincidences / min").font(.caption).foregroundStyle(.secondary)
+                    Text(stale ? "—" : state.total.map(String.init) ?? "—").font(Typography.monoFixed(40, .medium)).foregroundStyle(Palette.ink)
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                    Text("coincidences / min").font(Typography.monoFixed(11)).foregroundStyle(Palette.data).lineLimit(1).fixedSize()
                 }
-                Spacer()
+                Spacer(minLength: 6)
                 VStack(alignment: .trailing, spacing: 3) {
-                    MinuteBars(values: state.recent, tint: Palette.accentSoft).frame(width: 170, height: 40)
-                    Text("last 30 min · 1 bar per minute").font(.system(size: 10)).foregroundStyle(.secondary)
+                    chart.frame(width: 170, height: 40)
+                    Text(usesLines ? "last 30 min · per pair" : "last 30 min · 1 bar per minute")
+                        .font(Typography.monoFixed(10)).foregroundStyle(Palette.muted).lineLimit(1)
                 }
             }
-            HStack(spacing: 14) {
+            HStack(spacing: 12) {
                 ForEach(0..<3, id: \.self) { i in
-                    Text("\(["CH01", "CH02", "CH12"][i]) ").foregroundStyle(.secondary) + Text(state.pairs.count > i ? "\(state.pairs[i])" : "—").monospacedDigit()
+                    HStack(spacing: 4) {
+                        if usesLines { Rectangle().fill(Palette.pairs[i]).frame(width: 8, height: 2) }
+                        ChannelLabel(channel: i, size: 14, color: Palette.muted, fixed: true)
+                        Text(state.pairs.count > i ? "\(state.pairs[i])" : "—").font(Typography.monoFixed(13, .medium)).foregroundStyle(Palette.ink)
+                    }
                 }
-                Spacer()
+                Spacer(minLength: 4)
                 EnvLine(state: state)
             }
-            .font(.caption)
         }
         .padding(16)
     }
+
+    /// Decided default: three coincidence-pair lines. Older app builds that do not send
+    /// `recentPairs` fall back to the green minute bars (review fix 4).
+    private var usesLines: Bool { (state.recentPairs?.count ?? 0) == 3 && (state.recentPairs?.first?.count ?? 0) > 1 }
+
+    @ViewBuilder private var chart: some View {
+        if usesLines, let series = state.recentPairs {
+            PairLines(series: series)
+        } else {
+            MinuteBars(values: state.recent, tint: Palette.data)
+        }
+    }
 }
 
+/// Phase chip with cut corners; overdue is the only pink state (an alert).
 struct PhasePill: View {
     let phase: Phase
     var body: some View {
         Text(phase == .physics ? "Physics" : phase.title)
-            .font(.caption2.weight(.semibold)).foregroundStyle(phase.tint)
-            .padding(.horizontal, 8).padding(.vertical, 2)
-            .background(phase.tint.opacity(0.2), in: Capsule())
+            .font(Typography.raleway(11, .bold)).foregroundStyle(phase.tint)
+            .lineLimit(1).fixedSize()
+            .padding(.horizontal, 7).padding(.vertical, 2)
+            .background(phase.tint.opacity(0.16), in: ChamferedShape.chip)
+            .overlay { ChamferedShape.chip.strokeBorder(phase.tint.opacity(0.45), lineWidth: 1) }
     }
 }
 
@@ -110,11 +147,11 @@ struct PairColumn: View {
         Grid(alignment: .trailing, horizontalSpacing: 8, verticalSpacing: 1) {
             ForEach(0..<3, id: \.self) { i in
                 GridRow {
-                    Text(["CH01", "CH02", "CH12"][i]).foregroundStyle(.secondary)
-                    Text(pairs.count > i ? "\(pairs[i])" : "—").monospacedDigit()
+                    ChannelLabel(channel: i, size: 14, color: Palette.muted, fixed: true)
+                    Text(pairs.count > i ? "\(pairs[i])" : "—").font(Typography.monoFixed(12, .medium)).foregroundStyle(Palette.ink)
                 }
             }
-        }.font(.caption2)
+        }
     }
 }
 
@@ -122,8 +159,11 @@ struct EnvLine: View {
     let state: MuonActivity.ContentState
     var body: some View {
         HStack(spacing: 4) {
-            if let p = state.pressure { Text(String(format: "%.1f hPa", p)).monospacedDigit() }
-            if let t = state.temperature { Text("·").foregroundStyle(.secondary); Text(String(format: "%.1f °C", t)).monospacedDigit() }
+            if let p = state.pressure { Text(String(format: "%.1f hPa", p)).foregroundStyle(Palette.pressure) }
+            if state.pressure != nil, state.temperature != nil { Text("·").foregroundStyle(Palette.muted) }
+            if let t = state.temperature { Text(String(format: "%.1f °C", t)).foregroundStyle(Palette.temperature) }
         }
+        .font(Typography.monoFixed(12))
+        .lineLimit(1)
     }
 }

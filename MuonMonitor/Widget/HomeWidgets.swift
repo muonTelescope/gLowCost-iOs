@@ -40,7 +40,8 @@ struct RateProvider: TimelineProvider {
 struct RateWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "org.muonreadout.rate", provider: RateProvider()) { entry in
-            RateWidgetView(entry: entry).containerBackground(for: .widget) { Color(UIColor(hex: 0x0C1120)) }
+            RateWidgetView(entry: entry).containerBackground(for: .widget) { Palette.ground }
+                .environment(\.colorScheme, .dark)
                 .widgetURL(URL(string: "muonp4://now"))
         }
         .configurationDisplayName("Muon rate")
@@ -58,8 +59,9 @@ struct RateWidgetView: View {
             content(s)
         } else {
             VStack(alignment: .leading, spacing: 6) {
-                Image(systemName: "line.diagonal").foregroundStyle(Palette.accentSoft)
-                Text(SharedStore.isAvailable ? "Start logging in MuonP4" : "Open MuonP4 to set up widgets").font(.caption)
+                MuonMark(size: 16, color: Palette.lilac)
+                Text(SharedStore.isAvailable ? "Start logging in MuonP4" : "Open MuonP4 to set up widgets")
+                    .font(Typography.raleway(13, .semibold)).foregroundStyle(Palette.ink)
             }
         }
     }
@@ -69,15 +71,19 @@ struct RateWidgetView: View {
     @ViewBuilder private func content(_ s: WidgetSnapshot) -> some View {
         switch family {
         case .accessoryCircular:
+            // Accessory families are tinted by the system; keep them simple.
             Gauge(value: Double(s.total ?? 0), in: 0...Double(max(1, Int((s.meanRate ?? 60) * 1.5)))) {
                 Text("/min")
-            } currentValueLabel: { Text(value).monospacedDigit() }
+            } currentValueLabel: { Text(value).font(Typography.monoFixed(14, .medium)) }
             .gaugeStyle(.accessoryCircular)
         case .accessoryRectangular:
             VStack(alignment: .leading, spacing: 1) {
-                Text(s.runName.isEmpty ? "MuonP4" : s.runName).font(.headline).lineLimit(1)
-                Text("\(value) muons/min").monospacedDigit()
-                if let p = s.pressure { Text(String(format: "%.1f hPa", p)).font(.caption).monospacedDigit() }
+                HStack(spacing: 4) {
+                    MuonMark(size: 12, color: .primary)
+                    Text(s.runName.isEmpty ? "MuonP4" : s.runName).font(Typography.raleway(14, .bold)).lineLimit(1)
+                }
+                Text("\(value) muons/min").font(Typography.monoFixed(13, .medium))
+                if let p = s.pressure { Text(String(format: "%.1f hPa", p)).font(Typography.monoFixed(11)) }
             }
         case .accessoryInline:
             Text("\(value) muons/min")
@@ -86,37 +92,43 @@ struct RateWidgetView: View {
                 header(s)
                 HStack(alignment: .bottom) {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(value).font(.system(size: 40, weight: .medium, design: .rounded)).monospacedDigit()
-                        Text(s.meanRate.map { String(format: "per min · mean %.1f", $0) } ?? "per min").font(.caption).foregroundStyle(.secondary)
+                        Text(value).font(Typography.monoFixed(38, .medium)).foregroundStyle(Palette.ink).lineLimit(1).minimumScaleFactor(0.6)
+                        Text(s.meanRate.map { String(format: "per min · mean %.1f", $0) } ?? "per min")
+                            .font(Typography.monoFixed(11)).foregroundStyle(Palette.data).lineLimit(1)
                     }
-                    Spacer()
+                    Spacer(minLength: 6)
                     VStack(alignment: .trailing, spacing: 3) {
                         if let p = s.pressure {
-                            Text(String(format: "%.1f", p)).monospacedDigit() + Text(" hPa").foregroundStyle(Palette.pressure)
-                                + Text(s.pressureChange3h.map { $0 < -0.3 ? " ↓" : $0 > 0.3 ? " ↑" : "" } ?? "")
+                            Text(String(format: "%.1f", p)).foregroundStyle(Palette.ink) + Text(" hPa").foregroundStyle(Palette.pressure)
+                                + Text(s.pressureChange3h.map { $0 < -0.3 ? " ↓" : $0 > 0.3 ? " ↑" : "" } ?? "").foregroundStyle(Palette.muted)
                         }
-                        if let t = s.temperature { Text(String(format: "%.1f", t)).monospacedDigit() + Text(" °C").foregroundStyle(Palette.temperature) }
-                    }.font(.caption)
+                        if let t = s.temperature { Text(String(format: "%.1f", t)).foregroundStyle(Palette.ink) + Text(" °C").foregroundStyle(Palette.temperature) }
+                    }
+                    .font(Typography.monoFixed(12)).lineLimit(1)
                 }
-                MinuteBars(values: s.recent, tint: Palette.accentSoft).frame(height: 30)
+                // Review fix 4: minute bars are green everywhere.
+                MinuteBars(values: s.recent, tint: Palette.data).frame(height: 30)
             }
         default:
             VStack(alignment: .leading, spacing: 6) {
                 header(s)
                 Spacer(minLength: 0)
-                Text(value).font(.system(size: 44, weight: .medium, design: .rounded)).monospacedDigit()
-                Text(entry.overdue ? "update overdue" : "muons / min").font(.caption).foregroundStyle(entry.overdue ? Palette.danger : .secondary)
-                MinuteBars(values: Array(s.recent.suffix(30)), tint: Palette.accentSoft).frame(height: 24)
+                Text(value).font(Typography.monoFixed(40, .medium)).foregroundStyle(Palette.ink).lineLimit(1).minimumScaleFactor(0.6)
+                Text(entry.overdue ? "update overdue" : "muons / min").font(Typography.monoFixed(11))
+                    .foregroundStyle(entry.overdue ? Palette.alert : Palette.data).lineLimit(1)
+                MinuteBars(values: Array(s.recent.suffix(30)), tint: Palette.data).frame(height: 24)
             }
         }
     }
 
     private func header(_ s: WidgetSnapshot) -> some View {
         HStack(spacing: 5) {
-            Image(systemName: "line.diagonal").foregroundStyle(Palette.accentSoft)
-            Text(family == .systemMedium && !s.runName.isEmpty ? s.runName : "MuonP4").font(.caption.weight(.semibold)).lineLimit(1)
-            Spacer()
-            Circle().fill(entry.overdue ? Palette.danger : s.logging ? s.phase.tint : Palette.secondaryText).frame(width: 7, height: 7)
+            MuonMark(size: 13, color: Palette.lilac)
+            Text(family == .systemMedium && !s.runName.isEmpty ? s.runName : "MuonP4")
+                .font(Typography.raleway(12, .bold)).foregroundStyle(Palette.ink).lineLimit(1)
+            Spacer(minLength: 4)
+            Rectangle().fill(entry.overdue ? Palette.alert : s.logging ? s.phase.tint : Palette.secondaryText)
+                .frame(width: 6, height: 6).rotationEffect(.degrees(45))
         }
     }
 }
@@ -129,7 +141,7 @@ struct LoggingControl: ControlWidget {
             ControlWidgetToggle("Muon logging", isOn: on, action: SetLoggingIntent()) { isOn in
                 Label(isOn ? "Logging" : "Off", systemImage: isOn ? "record.circle.fill" : "record.circle")
             }
-            .tint(Palette.accent)
+            .tint(Palette.violet)
         }
         .displayName("Muon logging")
         .description("Start or stop logging from your MuonP4 detector.")
