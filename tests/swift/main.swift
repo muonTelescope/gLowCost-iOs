@@ -1,7 +1,7 @@
 import Foundation
 
 // Host tests: C/Swift wire compatibility plus the app's pure logic (no UI frameworks).
-// Run with tests/run-host-tests.sh on a Mac.
+// Run with tests/run-host-tests.sh (macOS or Linux, Swift 5.10+ and a C compiler).
 
 // MARK: telemetry wire format
 let data = try Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1]))
