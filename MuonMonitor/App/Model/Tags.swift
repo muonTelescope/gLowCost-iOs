@@ -1,16 +1,17 @@
 import Foundation
 import SwiftUI
 
-/// Default tag vocabulary plus the user's own tags. Tags are plain strings on
+/// Default tag vocabulary plus the user's own tags. Tag colours are violet,
+/// lilac, green or neutral; pink is reserved for alerts (review fix 3). Tags are plain strings on
 /// the run, so custom tags need no schema change.
 enum TagCatalog {
     struct Group: Identifiable { let id: String; let tags: [String]; let tint: Color }
 
     static let groups: [Group] = [
-        Group(id: "Power", tags: ["Mains", "Power bank", "Internal battery"], tint: Palette.pressure),
-        Group(id: "Radio", tags: ["Wi‑Fi on", "Wi‑Fi auto-off"], tint: Palette.accent),
-        Group(id: "Place", tags: ["Indoors", "Outdoors", "Vehicle", "Flight", "Underground"], tint: Palette.temperature),
-        Group(id: "Purpose", tags: ["Test", "Calibration", "Outreach"], tint: Palette.setup),
+        Group(id: "Power", tags: ["Mains", "Power bank", "Internal battery"], tint: Palette.violet),
+        Group(id: "Radio", tags: ["Wi‑Fi on", "Wi‑Fi auto-off"], tint: Palette.lilac),
+        Group(id: "Place", tags: ["Indoors", "Outdoors", "Vehicle", "Flight", "Underground"], tint: Palette.phosphor),
+        Group(id: "Purpose", tags: ["Test", "Calibration", "Outreach"], tint: Palette.muted),
     ]
     static var defaults: [String] { groups.flatMap(\.tags) }
 

@@ -41,14 +41,14 @@ struct NowView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
             if app.demo { DemoBanner() }
-            HStack(spacing: 8) {
-                PhaseBadge(phase: app.phase)
-                TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                    Text(statusLine(now: ctx.date)).font(.footnote).foregroundStyle(Palette.secondaryText).lineLimit(2)
-                }
+            Text(app.currentRun.map { "MuonP4 · \($0.name)" } ?? "MuonP4").capsLabel().lineLimit(1)
+            PhaseBadge(phase: app.phase)
+            TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                Text(statusLine(now: ctx.date)).font(Typography.footnote).foregroundStyle(Palette.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if let issue = app.issue ?? app.link.problem {
-                Label(issue, systemImage: "exclamationmark.triangle").font(.footnote).foregroundStyle(Palette.warning)
+                Label(issue, systemImage: "exclamationmark.triangle").font(Typography.footnote).foregroundStyle(Palette.alert)
             }
         }
     }
@@ -67,43 +67,57 @@ struct NowView: View {
 
     private var idleCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Not logging").font(.title3.weight(.semibold))
+            Text("Not logging").font(Typography.title2)
             Text("Start logging near your detector. The phone records every minute it receives, with GPS, and keeps going with the screen locked.")
-                .font(.subheadline).foregroundStyle(Palette.secondaryText)
+                .font(Typography.subheadline.weight(.medium)).foregroundStyle(Palette.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
             Button {
                 if app.needsPairing { showPair = true } else { app.start() }
             } label: {
                 Label(app.needsPairing ? "Find a detector" : "Start logging", systemImage: app.needsPairing ? "dot.radiowaves.left.and.right" : "record.circle")
-                    .frame(maxWidth: .infinity).padding(.vertical, 6)
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.muonPrimary)
         }
-        .card(padding: 18)
+        .card(padding: 18, edge: .bright)
     }
 
+    /// Hero: muon tracks from the last minute behind the count.
+    /// Review fix 1: the fade starts above the caps label and the text sits on a
+    /// solid strip, so no track runs through "COINCIDENCES, LAST MINUTE".
     private var hero: some View {
-        ZStack(alignment: .bottomLeading) {
+        let shape = ChamferedShape.panel(18)
+        return ZStack(alignment: .bottomLeading) {
             TrackPlate(count: last?.coincidences ?? 0, seed: UInt64(bitPattern: Int64(last?.epoch ?? 0)))
-            LinearGradient(colors: [Palette.hero.opacity(0), Palette.hero.opacity(0.94)], startPoint: .center, endPoint: .bottom)
+            LinearGradient(stops: [.init(color: Palette.hero.opacity(0), location: 0.18),
+                                   .init(color: Palette.hero.opacity(0.9), location: 0.42),
+                                   .init(color: Palette.hero, location: 0.5),
+                                   .init(color: Palette.hero, location: 1)],
+                           startPoint: .top, endPoint: .bottom)
             VStack(alignment: .leading, spacing: 4) {
-                Text("COINCIDENCES, LAST MINUTE").font(.caption2.weight(.medium)).tracking(0.8).foregroundStyle(.secondary)
+                Text("Coincidences, last minute").capsLabel()
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
                     Text(last.map { "\($0.coincidences)" } ?? "—")
-                        .font(.system(size: 96, weight: .light, design: .rounded)).monospacedDigit()
+                        .font(Typography.mono(92, .regular, relativeTo: .largeTitle)).monospacedDigit()
+                        .foregroundStyle(Palette.ink)
+                        .lineLimit(1).minimumScaleFactor(0.5)
                         .contentTransition(.numericText())
-                    Text("per min").font(.headline).foregroundStyle(.secondary)
+                    Text("muons / min").font(Typography.raleway(17, .bold, relativeTo: .headline)).foregroundStyle(Palette.data)
+                        .lineLimit(1).fixedSize()
                 }
                 if let l = last {
-                    Text("CH01 + CH02 + CH12 · raw counts · \(l.date.formatted(date: .omitted, time: .shortened))")
-                        .font(.footnote).foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        ChannelLabel(channel: -1, size: 13)
+                        Text("· raw counts · \(l.date.formatted(date: .omitted, time: .shortened))")
+                            .font(Typography.monoCaption).foregroundStyle(Palette.secondaryText).lineLimit(1).minimumScaleFactor(0.8)
+                    }
                 }
             }
-            .padding(22)
+            .padding(20)
         }
         .frame(height: 300)
         .background(Palette.hero)
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(Palette.track.opacity(0.14)))
+        .clipShape(shape)
+        .overlay { shape.strokeBorder(Palette.brightEdge, lineWidth: 1) }
         .animation(.snappy, value: last?.coincidences)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(last?.coincidences ?? 0) coincidences in the last minute")
@@ -112,13 +126,13 @@ struct NowView: View {
     private var pairTiles: some View {
         HStack(spacing: 10) {
             ForEach(0..<3, id: \.self) { ch in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(MinuteRecord.channelNames[ch]).font(.caption2.weight(.medium)).foregroundStyle(Palette.secondaryText)
-                    Text(last.map { "\(max($0.counts[ch], 0))" } ?? "—").font(.system(.title2, design: .monospaced).weight(.medium))
+                VStack(alignment: .leading, spacing: 6) {
+                    ChannelLabel(channel: ch, size: 15)
+                    Text(last.map { "\(max($0.counts[ch], 0))" } ?? "—").font(Typography.monoLarge).foregroundStyle(Palette.ink)
+                        .lineLimit(1).minimumScaleFactor(0.6)
                     Sparkline(values: tenMinuteMeans(ch)).frame(height: 20)
                 }
-                .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                .background(Palette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .panel(padding: 12, cut: 12)
                 .accessibilityElement(children: .combine)
             }
         }
@@ -136,14 +150,24 @@ struct NowView: View {
         let values = app.recentTotals(60)
         let valid = values.filter { $0 >= 0 }
         let gaps = values.filter { $0 < 0 }.count
+        let end = last?.date
         return VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Last hour").font(.headline)
-                Spacer()
+            HStack(alignment: .firstTextBaseline) {
+                Text("Last hour").font(Typography.headline)
+                Spacer(minLength: 8)
                 Text(valid.isEmpty ? "" : String(format: "mean %.1f", Double(valid.reduce(0, +)) / Double(valid.count)) + (gaps > 0 ? " · \(gaps) min gap" : ""))
-                    .font(.caption.monospaced()).foregroundStyle(Palette.secondaryText)
+                    .font(Typography.monoCaption).foregroundStyle(Palette.secondaryText).lineLimit(1).minimumScaleFactor(0.8)
             }
             MinuteBars(values: values).frame(height: 60)
+            if let end {
+                HStack {
+                    ForEach([60.0, 30.0, 0.0], id: \.self) { m in
+                        Text(end.addingTimeInterval(-m * 60).formatted(date: .omitted, time: .shortened))
+                        if m > 0 { Spacer() }
+                    }
+                }
+                .font(Typography.mono(10, .regular, relativeTo: .caption2)).foregroundStyle(Palette.secondaryText)
+            }
         }
         .card()
     }
@@ -151,51 +175,92 @@ struct NowView: View {
     private var environment: some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("PRESSURE").font(.caption2.weight(.medium)).tracking(0.8).foregroundStyle(Palette.pressure)
-                Text(last?.pressure.map { "\($0.hpa) hPa" } ?? "—").font(.system(.title3, design: .monospaced))
+                Text("Pressure").capsLabel(Palette.pressure)
+                valueWithUnit(last?.pressure.map(\.hpa), "hPa")
                 if let d = app.pressureChange3h {
                     Text(abs(d) < 0.3 ? "Steady over 3 h" : String(format: "%@ %.1f hPa in 3 h", d < 0 ? "Falling" : "Rising", abs(d)))
-                        .font(.caption).foregroundStyle(Palette.secondaryText)
+                        .font(Typography.caption).foregroundStyle(Palette.secondaryText).lineLimit(2).minimumScaleFactor(0.85)
                 }
             }.card()
             VStack(alignment: .leading, spacing: 6) {
-                Text("DETECTOR TEMP").font(.caption2.weight(.medium)).tracking(0.8).foregroundStyle(Palette.temperature)
-                Text(last?.temperature.map { String(format: "%.1f °C", $0) } ?? "—").font(.system(.title3, design: .monospaced))
-                Text("Recorded with each minute").font(.caption).foregroundStyle(Palette.secondaryText)
+                Text("Detector temp").capsLabel(Palette.temperature)
+                valueWithUnit(last?.temperature.map { String(format: "%.1f", $0) }, "°C")
+                Text("Recorded with each minute").font(Typography.caption).foregroundStyle(Palette.secondaryText).lineLimit(2).minimumScaleFactor(0.85)
             }.card()
         }
+    }
+
+    private func valueWithUnit(_ v: String?, _ unit: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(v ?? "—").font(Typography.monoValue).foregroundStyle(Palette.ink)
+            if v != nil { Text(unit).font(Typography.monoCaption).foregroundStyle(Palette.secondaryText) }
+        }
+        .lineLimit(1).minimumScaleFactor(0.7)
     }
 
     private var session: some View {
         let t = app.sessionTotals
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack { Text("This session").font(.headline); Spacer(); Text("valid physics only").font(.caption).foregroundStyle(Palette.secondaryText) }
-            HStack(spacing: 18) {
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("This session").font(Typography.headline)
+                Spacer(minLength: 8)
+                Text("valid physics only").font(Typography.caption).foregroundStyle(Palette.secondaryText).lineLimit(1)
+            }
+            // Review fix 6: three equal columns; labels shrink rather than wrap.
+            HStack(alignment: .top, spacing: 12) {
                 stat(t.muons.formatted(), "coincidences")
                 stat((Double(t.minutes) * 60).hoursMinutes, "exposure")
                 stat(t.minutes > 0 ? String(format: "%.1f", Double(t.muons) / Double(t.minutes)) : "—", "mean /min")
             }
-            Text("Σ CH01 \(t.pairs[0].formatted()) · CH02 \(t.pairs[1].formatted()) · CH12 \(t.pairs[2].formatted())")
-                .font(.caption.monospaced()).foregroundStyle(Palette.secondaryText)
+            ViewThatFits(in: .horizontal) {
+                sessionPairs(size: 15)
+                sessionPairs(size: 13)
+                VStack(alignment: .leading, spacing: 4) { ForEach(0..<3, id: \.self) { pairTotal($0, t.pairs[$0], size: 15) } }
+            }
         }
         .card()
     }
 
+    private func sessionPairs(size: CGFloat) -> some View {
+        let t = app.sessionTotals
+        return HStack(spacing: 10) {
+            ChannelLabel(channel: -1, size: size)
+            ForEach(0..<3, id: \.self) { pairTotal($0, t.pairs[$0], size: size) }
+        }
+    }
+
+    private func pairTotal(_ ch: Int, _ n: Int, size: CGFloat) -> some View {
+        HStack(spacing: 4) {
+            ChannelLabel(channel: ch, size: size)
+            Text(n.formatted()).font(Typography.mono(size - 2, .regular, relativeTo: .caption)).foregroundStyle(Palette.ink)
+        }.fixedSize()
+    }
+
     private func stat(_ v: String, _ l: String) -> some View {
-        VStack(alignment: .leading) { Text(v).font(.system(.title3, design: .monospaced)); Text(l).font(.caption).foregroundStyle(Palette.secondaryText) }
+        VStack(alignment: .leading, spacing: 2) {
+            Text(v).font(Typography.mono(19, .medium, relativeTo: .title3)).foregroundStyle(Palette.ink).lineLimit(1).minimumScaleFactor(0.6)
+            Text(l).font(Typography.caption).foregroundStyle(Palette.secondaryText).lineLimit(1).minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder private var healthCard: some View {
         let report = Health.report(app.recent)
-        if report.allSatisfy({ $0.minutes >= 30 }) {
-            let worst = report.max { $0.fano < $1.fano }!
+        if report.allSatisfy({ $0.minutes >= 30 }), let worst = report.max(by: { $0.fano < $1.fano }) {
             HStack(spacing: 12) {
                 Image(systemName: worst.level == .good ? "checkmark.seal" : "exclamationmark.triangle")
-                    .font(.title3).foregroundStyle(worst.level == .good ? Palette.physics : Palette.warning)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(worst.level == .good ? "Counting looks clean" : "More variation than expected").font(.subheadline.weight(.semibold))
-                    Text(String(format: "Spread vs pure chance: CH01 %.2f · CH02 %.2f · CH12 %.2f (1.00 is ideal)", report[0].fano, report[1].fano, report[2].fano))
-                        .font(.caption).foregroundStyle(Palette.secondaryText)
+                    .font(.system(size: 20)).foregroundStyle(worst.level == .good ? Palette.physics : Palette.alert)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(worst.level == .good ? "Counting looks clean" : "More variation than expected").font(Typography.subheadline)
+                    HStack(spacing: 10) {
+                        ForEach(report.prefix(3)) { r in
+                            HStack(spacing: 4) {
+                                ChannelLabel(channel: r.channel, size: 13)
+                                Text(String(format: "%.2f", r.fano)).font(Typography.monoCaption).foregroundStyle(Palette.ink)
+                            }
+                        }
+                    }
+                    Text("Spread vs pure chance, 1.00 is ideal").font(Typography.caption).foregroundStyle(Palette.secondaryText)
                 }
             }
             .card()
@@ -203,23 +268,20 @@ struct NowView: View {
     }
 
     private var explainer: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "line.diagonal").font(.title2).foregroundStyle(Palette.track)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("What are the lines?").font(.subheadline.weight(.semibold))
-                    Text("Each line is one muon from the last minute. Muons are heavy cousins of the electron, made when cosmic rays hit air about 15 km up. Most arrive close to straight down, and roughly one crosses your palm every second.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                    DisclosureGroup("How the detector counts them", isExpanded: $explainerOpen) {
-                        Text("Three scintillator paddles each give off a flash of light when a charged particle passes through. Silicon photomultipliers turn the flash into a pulse. A coincidence is two paddles firing within the same short window, which rejects most noise. CH01, CH02 and CH12 are the three possible pairs; the big number is their sum.")
-                            .font(.footnote).foregroundStyle(.secondary).padding(.top, 4)
-                    }
-                    .font(.footnote.weight(.medium)).tint(Palette.accent)
+        HStack(alignment: .top, spacing: 12) {
+            MuonMark(size: 26, color: Palette.track)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("What are the lines?").font(Typography.subheadline)
+                Text("Each line is one muon from the last minute. Muons are heavy cousins of the electron, made when cosmic rays hit air about 15 km up. Most arrive close to straight down, and roughly one crosses your palm every second.")
+                    .font(Typography.footnote).foregroundStyle(Palette.secondaryText).fixedSize(horizontal: false, vertical: true)
+                DisclosureGroup("How the detector counts them", isExpanded: $explainerOpen) {
+                    Text("Three scintillator paddles, numbered 0, 1 and 2, each give off a flash of light when a charged particle passes through. Silicon photomultipliers turn the flash into a pulse. A coincidence is two paddles firing within the same short window, which rejects most noise. CH⁰₁, CH⁰₂ and CH¹₂ are the three possible pairs (the digits name the paddles); the big number, ΣCH, is their sum.")
+                        .font(Typography.footnote).foregroundStyle(Palette.secondaryText).padding(.top, 4)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .font(Typography.raleway(13, .semibold, relativeTo: .footnote)).tint(Palette.lilac)
             }
         }
-        .padding(14)
-        .background(Palette.accent.opacity(0.07), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Palette.accent.opacity(0.22)))
+        .panel(padding: 14, fill: Palette.raised)
     }
 }

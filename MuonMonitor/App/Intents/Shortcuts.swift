@@ -25,7 +25,7 @@ struct MuonRateIntent: AppIntent {
 struct MuonShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(intent: MuonRateIntent(), phrases: ["What's the muon rate in \(.applicationName)", "How many muons in \(.applicationName)"],
-                    shortTitle: "Muon rate", systemImageName: "line.diagonal")
+                    shortTitle: "Muon rate", systemImageName: "chart.bar.fill")
         AppShortcut(intent: StartLoggingIntent(), phrases: ["Start logging in \(.applicationName)"],
                     shortTitle: "Start logging", systemImageName: "record.circle")
         AppShortcut(intent: StopLoggingIntent(), phrases: ["Stop logging in \(.applicationName)"],

@@ -39,9 +39,12 @@ final class DetectorLink: NSObject, CBCentralManagerDelegate, CBPeripheralDelega
     @ObservationIgnored private var requestID = UInt32.random(in: 1...UInt32.max)
     @ObservationIgnored private var controlTimeout: DispatchWorkItem?
 
-    override init() {
+    /// `restoring: false` for demo mode, so a demo session never claims the
+    /// background-restoration identifier used by real logging.
+    init(restoring: Bool = true) {
         super.init()
-        central = CBCentralManager(delegate: self, queue: .main, options: [CBCentralManagerOptionRestoreIdentifierKey: "MuonP4.monitor"])
+        central = CBCentralManager(delegate: self, queue: .main,
+                                   options: restoring ? [CBCentralManagerOptionRestoreIdentifierKey: "MuonP4.monitor"] : nil)
     }
 
     // MARK: connection lifecycle

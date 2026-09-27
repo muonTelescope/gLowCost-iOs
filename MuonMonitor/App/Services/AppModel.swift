@@ -32,7 +32,7 @@ struct DetectorStatus: Equatable {
 @Observable
 @MainActor
 final class AppModel {
-    let link = DetectorLink()
+    let link: DetectorLink
     let location = LocationTracker()
     let cloud = CloudFolder()
     @ObservationIgnored let container: ModelContainer
@@ -62,6 +62,7 @@ final class AppModel {
     init(container: ModelContainer, demo: Bool = false) {
         self.container = container
         self.demo = demo
+        self.link = DetectorLink(restoring: !demo)
         expertMode = UserDefaults.standard.bool(forKey: "expertMode")
         logging = demo ? true : UserDefaults.standard.bool(forKey: "logging")
         link.onSample = { [weak self] t in MainActor.assumeIsolated { self?.ingest(t) } }
@@ -243,18 +244,22 @@ final class AppModel {
     private func activityState() -> MuonActivity.ContentState {
         let pairs = recent.last.map { Array($0.counts.prefix(3)) } ?? []
         return MuonActivity.ContentState(phase: phase, runName: currentRun?.name ?? "MuonP4", pairs: pairs, recent: recentTotals(30),
+                                         recentPairs: (0..<3).map { ch in recentSeries(30) { $0.counts.count > ch ? $0.counts[ch] : 0 } },
                                          temperature: recent.last?.temperature, pressure: recent.last?.pressure,
                                          sampleDate: lastMinuteEnd, setupEnds: setupEnds, loggingSince: currentRun?.start ?? Date())
     }
 
     /// Minute totals for the last n minutes, oldest first, -1 where no physics minute was received.
-    func recentTotals(_ n: Int) -> [Int] {
+    func recentTotals(_ n: Int) -> [Int] { recentSeries(n) { $0.coincidences } }
+
+    /// Any per-minute value for the last n minutes, oldest first, -1 where no physics minute was received.
+    func recentSeries(_ n: Int, _ value: (MinuteRecord) -> Int) -> [Int] {
         guard let end = recent.last?.epoch else { return [] }
         var out = Array(repeating: -1, count: n)
         for r in recent.reversed() {
             let i = n - 1 - Int(((end - r.epoch) / 60).rounded())
             if i < 0 { break }
-            if r.physics { out[i] = r.coincidences }
+            if r.physics { out[i] = max(value(r), 0) }
         }
         return out
     }

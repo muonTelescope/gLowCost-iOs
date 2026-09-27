@@ -18,7 +18,7 @@ struct RenameSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Run name", text: $name).font(.title3).submitLabel(.done)
+                    TextField("Run name", text: $name).font(Typography.title2).submitLabel(.done)
                 } footer: {
                     Text("Shown in the app, in Runs, and as the folder name in your cosmic folder.")
                 }
@@ -26,10 +26,10 @@ struct RenameSheet: View {
                     Section {
                         Toggle("Rename on the detector too", isOn: $sendToDetector).disabled(!canSend)
                         if sendToDetector {
-                            LabeledContent("SD label", value: label.isEmpty ? "—" : label).font(.footnote.monospaced())
+                            LabeledContent("SD label", value: label.isEmpty ? "—" : label).font(Typography.mono(13, .regular, relativeTo: .footnote))
                             if let file = app.status.logFile.isEmpty ? nil : app.status.logFile {
                                 Text("The detector renames \(file) and its env file to end in _\(label).csv")
-                                    .font(.caption).foregroundStyle(Palette.secondaryText)
+                                    .font(Typography.caption).foregroundStyle(Palette.secondaryText)
                             }
                         }
                     } footer: {
@@ -37,8 +37,9 @@ struct RenameSheet: View {
                                      : "Connect to the detector to rename its SD files. The app name changes now.")
                     }
                 }
-                if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(Palette.warning) } }
+                if let error { Section { Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(Palette.alert) } }
             }
+            .scrollContentBackground(.hidden).background(Palette.background).tint(Palette.violet)
             .navigationTitle("Rename run").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -82,6 +83,7 @@ struct TagEditor: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden).background(Palette.background).tint(Palette.violet)
             .navigationTitle("Tags").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

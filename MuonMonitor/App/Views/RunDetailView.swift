@@ -27,7 +27,7 @@ struct RunDetailView: View {
                 header
                 stats(recs)
                 controls
-                RateChart(bins: bins, events: run.events, selected: $selected)
+                RateChart(bins: bins, events: run.events, binMinutes: binMinutes, selected: $selected)
                 environmentCharts(bins)
                 if hasAltitude(recs) { AltitudeChart(bins: bins, selected: $selected) }
                 TrackMap(records: recs, selected: selected, channel: channel)
@@ -57,23 +57,24 @@ struct RunDetailView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
             if run.isLive { PhaseBadge(phase: app.phase) }
-            Text(dateRange).font(.caption2.weight(.medium)).tracking(0.6).foregroundStyle(Palette.secondaryText)
+            Text(dateRange).capsLabel(Palette.secondaryText)
             HStack(spacing: 8) {
-                Text(run.name).font(.title.bold()).lineLimit(2)
-                Button { renaming = true } label: { Image(systemName: "pencil").font(.subheadline.weight(.semibold)).padding(8) }
-                    .buttonStyle(.glass).accessibilityLabel("Rename run")
+                Text(run.name).font(Typography.title).lineLimit(2)
+                Button { renaming = true } label: { Image(systemName: "pencil") }
+                    .buttonStyle(.muonIcon).accessibilityLabel("Rename run")
             }
             FlowLayout(spacing: 6) {
                 ForEach(run.tags, id: \.self) { TagChip(tag: $0) }
                 Button { editingTags = true } label: {
-                    Label(run.tags.isEmpty ? "Add tags" : "Edit", systemImage: "tag").font(.caption.weight(.medium))
+                    Label(run.tags.isEmpty ? "Add tags" : "Edit", systemImage: "tag").font(Typography.raleway(12, .semibold, relativeTo: .caption))
+                        .foregroundStyle(Palette.lilac)
                         .padding(.horizontal, 10).padding(.vertical, 5)
-                        .overlay(Capsule().strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [3])).foregroundStyle(Palette.secondaryText))
+                        .overlay(ChamferedShape.chip.strokeBorder(Palette.secondaryText, style: StrokeStyle(lineWidth: 1, dash: [3])))
                 }.buttonStyle(.plain)
             }
             if let label = run.detectorLabel, !label.isEmpty {
                 Text("Detector label \(label)" + (run.sdFileName.map { " · \($0)" } ?? ""))
-                    .font(.caption2.monospaced()).foregroundStyle(Palette.secondaryText)
+                    .font(Typography.mono(11, .regular, relativeTo: .caption2)).foregroundStyle(Palette.secondaryText)
             }
         }
     }
@@ -97,12 +98,16 @@ struct RunDetailView: View {
 
     private var controls: some View {
         VStack(spacing: 8) {
-            Picker("Channel", selection: $channel) {
-                Text("Sum").tag(-1); Text("CH01").tag(0); Text("CH02").tag(1); Text("CH12").tag(2)
-            }.pickerStyle(.segmented)
-            Picker("Bin", selection: $binMinutes) {
-                Text("1 min").tag(1); Text("10 min").tag(10); Text("30 min").tag(30); Text("60 min").tag(60)
-            }.pickerStyle(.segmented)
+            // Custom segmented controls so the channel names can use CH superscript/subscript notation.
+            ChamferSegmented(options: [-1, 0, 1, 2], selection: $channel) { ch, on in
+                if ch < 0 { Text("Sum").font(Typography.raleway(15, .bold, relativeTo: .subheadline)).foregroundStyle(on ? Palette.ink : Palette.muted) }
+                else { ChannelLabel(channel: ch, size: 15, color: on ? Palette.ink : Palette.muted) }
+            }
+            .accessibilityLabel("Channel")
+            ChamferSegmented(options: [1, 10, 30, 60], selection: $binMinutes) { m, on in
+                Text("\(m) min").font(Typography.mono(13, .medium, relativeTo: .footnote)).foregroundStyle(on ? Palette.ink : Palette.muted)
+            }
+            .accessibilityLabel("Bin size")
         }
     }
 
@@ -124,20 +129,20 @@ struct RunDetailView: View {
         let events = run.events.sorted { $0.date < $1.date }
         return VStack(alignment: .leading, spacing: 8) {
             DisclosureGroup(isExpanded: $eventsOpen) {
-                if events.isEmpty { Text("Nothing unusual recorded.").font(.footnote).foregroundStyle(Palette.secondaryText) }
+                if events.isEmpty { Text("Nothing unusual recorded.").font(Typography.footnote).foregroundStyle(Palette.secondaryText) }
                 ForEach(events) { e in
                     HStack(alignment: .top, spacing: 10) {
-                        Image(systemName: e.eventKind.symbol).frame(width: 20).foregroundStyle(Palette.accent)
+                        Image(systemName: e.eventKind.symbol).frame(width: 20).foregroundStyle(Palette.lilac)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(e.eventKind.title).font(.subheadline.weight(.medium))
-                            Text(e.detail).font(.caption).foregroundStyle(Palette.secondaryText)
-                            Text(e.date.formatted(date: .abbreviated, time: .shortened)).font(.caption2.monospaced()).foregroundStyle(Palette.secondaryText)
+                            Text(e.eventKind.title).font(Typography.subheadline)
+                            Text(e.detail).font(Typography.caption).foregroundStyle(Palette.secondaryText)
+                            Text(e.date.formatted(date: .abbreviated, time: .shortened)).font(Typography.mono(11, .regular, relativeTo: .caption2)).foregroundStyle(Palette.secondaryText)
                         }
                     }.padding(.top, 6)
                 }
             } label: {
-                Text("Events · \(events.count)").font(.headline)
-            }.tint(.primary)
+                Text("Events · \(events.count)").font(Typography.headline)
+            }.tint(Palette.ink)
         }.card()
     }
 
@@ -145,10 +150,10 @@ struct RunDetailView: View {
         let gaps = run.events.filter { $0.eventKind == .gap }.count
         if run.source == "phone" {
             VStack(alignment: .leading, spacing: 8) {
-                Text("SD card").font(.headline)
+                Text("SD card").font(Typography.headline)
                 Text(gaps > 0 ? "The phone missed minutes \(gaps == 1 ? "once" : "\(gaps) times"). The detector's SD card has every minute." :
                         "The detector's SD card is the complete record. Merge it to be sure no minute is missing.")
-                    .font(.footnote).foregroundStyle(Palette.secondaryText)
+                    .font(Typography.footnote).foregroundStyle(Palette.secondaryText)
                 if run.isLive {
                     Button {
                         filling = true
@@ -158,10 +163,10 @@ struct RunDetailView: View {
                             filling = false
                         }
                     } label: { Label(filling ? "Downloading \(fillProgress)" : "Fill gaps from the SD card", systemImage: "sdcard").frame(maxWidth: .infinity) }
-                        .buttonStyle(.glass).disabled(filling || !app.link.controlsReady)
+                        .buttonStyle(.muonSecondary).disabled(filling || !app.link.controlsReady)
                 } else {
                     Text("For a finished run, import its muon_….csv on the Runs tab; missing minutes are merged into this run.")
-                        .font(.caption).foregroundStyle(Palette.secondaryText)
+                        .font(Typography.caption).foregroundStyle(Palette.secondaryText)
                 }
             }.card()
         }
@@ -169,7 +174,7 @@ struct RunDetailView: View {
 
     private var notesCard: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Notes").font(.headline)
+            Text("Notes").font(Typography.headline)
             TextField("Where was the detector, what changed…", text: $run.notes, axis: .vertical).lineLimit(2...6)
         }.card()
     }
@@ -179,15 +184,15 @@ struct RunDetailView: View {
             if app.cloud.isConfigured {
                 Button { if !app.cloud.save(run) { message = app.cloud.problem } } label: {
                     Label("Save to \(app.cloud.folderName ?? "cosmic") now", systemImage: "icloud.and.arrow.up").frame(maxWidth: .infinity)
-                }.buttonStyle(.glassProminent)
+                }.buttonStyle(.muonPrimary)
                 Text(run.exportedAt.map { "Saved \($0.formatted(date: .omitted, time: .shortened)) in \(app.cloud.folderName ?? "cosmic") › phone › \(run.exportFolder ?? "")" } ?? "Not saved yet. Live runs save every 5 minutes.")
-                    .font(.caption).foregroundStyle(Palette.secondaryText)
+                    .font(Typography.caption).foregroundStyle(Palette.secondaryText)
             } else {
-                Text("Choose your cosmic folder in Settings to save runs to iCloud Drive automatically.").font(.footnote).foregroundStyle(Palette.secondaryText)
+                Text("Choose your cosmic folder in Settings to save runs to iCloud Drive automatically.").font(Typography.footnote).foregroundStyle(Palette.secondaryText)
             }
             ShareLink(item: CSVFile(name: CSVExport.folderName(start: run.start, name: run.name) + ".csv", records: recs), preview: SharePreview(run.name)) {
                 Label("Share CSV", systemImage: "tablecells").frame(maxWidth: .infinity)
-            }.buttonStyle(.glass)
+            }.buttonStyle(.muonSecondary)
         }.card()
     }
 }
@@ -210,6 +215,7 @@ struct CSVFile: Transferable {
 struct RateChart: View {
     let bins: [RateBin]
     let events: [RunEvent]
+    var binMinutes: Int = 30
     @Binding var selected: Date?
 
     private var selectedBin: RateBin? {
@@ -219,17 +225,28 @@ struct RateChart: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack { Text("Rate").font(.headline); Spacer(); Text("counts / min · raw").font(.caption).foregroundStyle(Palette.secondaryText) }
+            HStack(alignment: .firstTextBaseline) {
+                Text("Rate, \(binMinutes)-min bins").font(Typography.headline).lineLimit(1).minimumScaleFactor(0.8)
+                Spacer(minLength: 8)
+                Text("counts / min").font(Typography.monoCaption).foregroundStyle(Palette.secondaryText).lineLimit(1)
+            }
+            HStack(spacing: 6) {
+                Rectangle().fill(Palette.data).frame(width: 14, height: 2)
+                Text("Raw counts, ±1σ").font(Typography.caption).foregroundStyle(Palette.secondaryText)
+            }
             if bins.isEmpty {
                 ContentUnavailableView("No physics minutes yet", systemImage: "chart.xyaxis.line", description: Text("Setup and HV settling are not charted."))
                     .frame(height: 200)
             } else {
+                // Review fix 5: the readout lives in a strip above the plot, on the side
+                // away from the selected point, so it never covers the peak it describes.
+                tooltipStrip.frame(height: 50)
                 Chart {
                     ForEach(bins) { b in
                         RuleMark(x: .value("Time", b.date), yStart: .value("Low", b.rate - b.error), yEnd: .value("High", b.rate + b.error))
-                            .foregroundStyle(Palette.accent.opacity(0.25)).lineStyle(StrokeStyle(lineWidth: bins.count > 80 ? 1 : 3, lineCap: .round))
+                            .foregroundStyle(Palette.data.opacity(0.25)).lineStyle(StrokeStyle(lineWidth: bins.count > 80 ? 1 : 3, lineCap: .butt))
                         LineMark(x: .value("Time", b.date), y: .value("Rate", b.rate), series: .value("Segment", "line\(b.segment)"))
-                            .foregroundStyle(Palette.accent).lineStyle(StrokeStyle(lineWidth: 2, lineJoin: .round))
+                            .foregroundStyle(Palette.data).lineStyle(StrokeStyle(lineWidth: 2, lineJoin: .round))
                     }
                     ForEach(events.filter { $0.eventKind != .label && $0.eventKind != .note }) { e in
                         RuleMark(x: .value("Event", e.date))
@@ -239,27 +256,41 @@ struct RateChart: View {
                             }
                     }
                     if let b = selectedBin {
-                        RuleMark(x: .value("Selected", b.date)).foregroundStyle(Color.primary.opacity(0.35))
-                        PointMark(x: .value("Time", b.date), y: .value("Rate", b.rate)).foregroundStyle(Palette.accent).symbolSize(60)
+                        RuleMark(x: .value("Selected", b.date)).foregroundStyle(Palette.ink.opacity(0.35)).lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 3]))
+                        PointMark(x: .value("Time", b.date), y: .value("Rate", b.rate)).foregroundStyle(Palette.data).symbolSize(60)
                     }
                 }
                 .chartYScale(domain: .automatic(includesZero: false))
+                .chartXAxis { AxisMarks { _ in AxisGridLine().foregroundStyle(Palette.grid); AxisValueLabel().font(Typography.mono(10, .regular, relativeTo: .caption2)).foregroundStyle(Palette.secondaryText) } }
+                .chartYAxis { AxisMarks { _ in AxisGridLine().foregroundStyle(Palette.grid); AxisValueLabel().font(Typography.mono(10, .regular, relativeTo: .caption2)).foregroundStyle(Palette.secondaryText) } }
                 .chartXSelection(value: $selected)
-                .frame(height: 220)
-                .overlay(alignment: .topTrailing) {
-                    if let b = selectedBin {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("\(b.date.formatted(date: .omitted, time: .shortened)) · \(b.minutes) min")
-                            Text(String(format: "%.2f ± %.2f /min", b.rate, b.error))
-                            if let p = b.pressure { Text(String(format: "%.1f hPa", p) + (b.temperature.map { String(format: " · %.1f °C", $0) } ?? "")) }
-                        }
-                        .font(.caption2.monospaced()).padding(8)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
-                        .padding(4)
-                    }
-                }
+                .frame(height: 200)
             }
         }.card()
+    }
+
+    @ViewBuilder private var tooltipStrip: some View {
+        if let b = selectedBin, let first = bins.first?.date, let last = bins.last?.date {
+            let rightHalf = last > first && b.date.timeIntervalSince(first) / last.timeIntervalSince(first) > 0.5
+            HStack {
+                if rightHalf { tooltip(b); Spacer(minLength: 0) } else { Spacer(minLength: 0); tooltip(b) }
+            }
+        } else {
+            Text("Drag across the chart to read a bin").font(Typography.caption).foregroundStyle(Palette.secondaryText)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        }
+    }
+
+    private func tooltip(_ b: RateBin) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("\(b.date.formatted(date: .omitted, time: .shortened)) · \(b.minutes) min")
+            Text(String(format: "%.2f ± %.2f /min", b.rate, b.error)).foregroundStyle(Palette.data)
+            if let p = b.pressure { Text(String(format: "%.1f hPa", p) + (b.temperature.map { String(format: " · %.1f °C", $0) } ?? "")) }
+        }
+        .font(Typography.mono(11, .regular, relativeTo: .caption2)).foregroundStyle(Palette.ink)
+        .lineLimit(1)
+        .padding(.horizontal, 8).padding(.vertical, 5)
+        .chamferGlass(.control(Chamfer.chip + 2))
     }
 }
 
@@ -270,18 +301,21 @@ struct MiniSeries: View {
     let selected: Date?
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.caption2.weight(.medium)).tracking(0.6).foregroundStyle(tint)
+            Text(title).capsLabel(tint)
             Chart {
                 ForEach(Array(points.enumerated()), id: \.offset) { item in
                     LineMark(x: .value("Time", item.element.0), y: .value("Value", item.element.1), series: .value("S", item.element.2)).foregroundStyle(tint)
                 }
-                if let selected { RuleMark(x: .value("Selected", selected)).foregroundStyle(Color.primary.opacity(0.3)) }
+                if let selected { RuleMark(x: .value("Selected", selected)).foregroundStyle(Palette.ink.opacity(0.3)) }
             }
             .chartYScale(domain: .automatic(includesZero: false))
             .chartXAxis(.hidden)
+            .chartYAxis { AxisMarks { _ in AxisGridLine().foregroundStyle(Palette.grid); AxisValueLabel().font(Typography.mono(9, .regular, relativeTo: .caption2)).foregroundStyle(Palette.secondaryText) } }
             .frame(height: 80)
             if let lo = points.map(\.1).min(), let hi = points.map(\.1).max() {
-                Text(String(format: "%.1f – %.1f", lo, hi)).font(.caption2.monospaced()).foregroundStyle(Palette.secondaryText)
+                // Review fix 6: one line, shrinks instead of wrapping.
+                Text(String(format: "%.1f – %.1f", lo, hi)).font(Typography.mono(11, .regular, relativeTo: .caption2)).foregroundStyle(Palette.secondaryText)
+                    .lineLimit(1).minimumScaleFactor(0.7)
             }
         }.card(padding: 12)
     }
@@ -292,17 +326,17 @@ struct AltitudeChart: View {
     @Binding var selected: Date?
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("GPS ALTITUDE, m").font(.caption2.weight(.medium)).tracking(0.6).foregroundStyle(Palette.setup)
+            Text("GPS ALTITUDE, m").capsLabel(Palette.setup)
             Chart {
                 ForEach(bins.filter { $0.altitude != nil }) { b in
                     LineMark(x: .value("Time", b.date), y: .value("Altitude", b.altitude!), series: .value("S", b.segment)).foregroundStyle(Palette.setup)
                 }
-                if let selected { RuleMark(x: .value("Selected", selected)).foregroundStyle(Color.primary.opacity(0.3)) }
+                if let selected { RuleMark(x: .value("Selected", selected)).foregroundStyle(Palette.ink.opacity(0.3)) }
             }
             .chartXSelection(value: $selected)
             .frame(height: 110)
             Text("Muon rates rise with altitude. Pressure measured inside a vehicle or cabin is not outside air pressure.")
-                .font(.caption).foregroundStyle(Palette.secondaryText)
+                .font(Typography.caption).foregroundStyle(Palette.secondaryText)
         }.card()
     }
 }
@@ -311,19 +345,35 @@ struct HealthCard: View {
     let records: [MinuteRecord]
     var body: some View {
         let report = Health.report(records)
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Counting statistics").font(.headline)
-            Text("A clean counter varies only by chance: spread ÷ mean ≈ 1. Higher values point to interference, a noisy threshold or a changing setup.")
-                .font(.caption).foregroundStyle(Palette.secondaryText)
-            ForEach(report) { r in
-                HStack {
-                    Text(MinuteRecord.channelNames[r.channel]).font(.subheadline.monospaced())
-                    Spacer()
-                    Text(r.fano.isFinite ? String(format: "%.2f", r.fano) : "—").font(.subheadline.monospaced())
-                    Image(systemName: r.level == .good ? "checkmark.circle.fill" : r.level == .unknown ? "questionmark.circle" : "exclamationmark.triangle.fill")
-                        .foregroundStyle(r.level == .good ? Palette.physics : r.level == .unknown ? Palette.secondaryText : Palette.warning)
-                        .accessibilityLabel(r.level.rawValue)
+        let pairs = Array(report.prefix(3))
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Counting statistics").font(Typography.headline)
+            Text("Scatter ÷ what pure chance allows. 1.00 is ideal; higher values point to interference, a noisy threshold or a changing setup.")
+                .font(Typography.caption).foregroundStyle(Palette.secondaryText).fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                ForEach(pairs) { r in
+                    VStack(alignment: .leading, spacing: 4) {
+                        ChannelLabel(channel: r.channel, size: 15)
+                        Text(r.fano.isFinite ? String(format: "%.2f", r.fano) : "—").font(Typography.monoValue)
+                            .foregroundStyle(r.level == .good ? Palette.ink : r.level == .unknown ? Palette.secondaryText : Palette.alert)
+                            .lineLimit(1).minimumScaleFactor(0.7)
+                    }
+                    .panel(padding: 10, cut: 8, fill: Palette.raised)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityValue(r.level.rawValue)
                 }
+            }
+            if !pairs.isEmpty {
+                let clean = pairs.allSatisfy { $0.level == .good }
+                let unknown = pairs.contains { $0.level == .unknown }
+                HStack(spacing: 6) {
+                    Image(systemName: clean ? "checkmark" : unknown ? "questionmark" : "exclamationmark.triangle")
+                    Text(clean ? "Counting looks clean" : unknown ? "Not enough physics minutes yet" : "More variation than chance allows")
+                }
+                .font(Typography.raleway(12, .bold, relativeTo: .caption))
+                .foregroundStyle(clean ? Palette.physics : unknown ? Palette.muted : Palette.alert)
+                .padding(.horizontal, 9).padding(.vertical, 5)
+                .background((clean ? Palette.physics : unknown ? Palette.muted : Palette.alert).opacity(0.12), in: ChamferedShape.chip)
             }
         }.card()
     }
@@ -347,7 +397,7 @@ struct TrackMap: View {
         }
         VStack(alignment: .leading, spacing: 8) {
             if fixes.isEmpty {
-                Label("No GPS for this run", systemImage: "location.slash").font(.subheadline).foregroundStyle(Palette.secondaryText)
+                Label("No GPS for this run", systemImage: "location.slash").font(Typography.raleway(15, .medium, relativeTo: .subheadline)).foregroundStyle(Palette.secondaryText)
             } else {
                 let spread = maxDistance(fixes.map(\.coord))
                 let lo = fixes.map(\.rate).sorted()[fixes.count / 10], hi = fixes.map(\.rate).sorted()[fixes.count * 9 / 10]
@@ -355,28 +405,32 @@ struct TrackMap: View {
                 Map(initialPosition: .automatic, interactionModes: [.pan, .zoom]) {
                     if spread < 60 {
                         MapCircle(center: centroid(fixes.map(\.coord)), radius: median(fixes.map(\.accuracy)))
-                            .foregroundStyle(Palette.accent.opacity(0.12)).stroke(Palette.accent.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [3]))
+                            .foregroundStyle(Palette.data.opacity(0.12)).stroke(Palette.data.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [3]))
                     }
                     ForEach(Array(stride(from: 1, to: fixes.count, by: 1)), id: \.self) { i in
                         MapPolyline(coordinates: [fixes[i - 1].coord, fixes[i].coord])
                             .stroke(color(for: (fixes[i].rate + fixes[i - 1].rate) / 2, lo, hi), lineWidth: spread < 60 ? 2 : 5)
                     }
                     Annotation("", coordinate: marker.coord) {
-                        Circle().fill(.white).frame(width: 14, height: 14).overlay(Circle().stroke(.black.opacity(0.4), lineWidth: 2))
+                        Circle().fill(Palette.ink).frame(width: 14, height: 14).overlay(Circle().stroke(Palette.ground.opacity(0.6), lineWidth: 2))
                     }
                 }
                 .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
                 .frame(height: 220)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .chamferClip(.panel(10))
                 HStack {
                     Text(spread < 60 ? "Stationary · \(fixes.count) fixes" : String(format: "Moved %.1f km · %d fixes", pathLength(fixes.map(\.coord)) / 1000, fixes.count))
-                        .font(.subheadline.weight(.semibold))
+                        .font(Typography.subheadline)
                     Spacer()
-                    HStack(spacing: 0) { ForEach(0..<5, id: \.self) { Palette.ramp[$0].frame(width: 12, height: 6) } }
-                        .accessibilityLabel("Colour shows rate, light is low, dark is high")
+                    HStack(spacing: 4) {
+                        Text("rate").font(Typography.mono(10, .regular, relativeTo: .caption2)).foregroundStyle(Palette.secondaryText)
+                        HStack(spacing: 0) { ForEach(0..<5, id: \.self) { Palette.ramp[$0].frame(width: 12, height: 6) } }
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Colour shows rate, dim green is low, bright green is high")
                 }
                 Text("One fix per minute, coloured by that minute's rate. The white dot follows the time selected in the chart. Location stays on your phone and in your cosmic folder.")
-                    .font(.caption).foregroundStyle(Palette.secondaryText)
+                    .font(Typography.caption).foregroundStyle(Palette.secondaryText)
             }
         }.card()
     }

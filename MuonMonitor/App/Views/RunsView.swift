@@ -27,9 +27,21 @@ struct RunsView: View {
         return groups.sorted { ($0.value.first?.start ?? .distantPast) > ($1.value.first?.start ?? .distantPast) }.map { ($0.key, $0.value) }
     }
 
+    /// "6 runs · 79 h of physics"
+    private var summary: String {
+        let minutes = runs.reduce(0) { $0 + $1.physicsMinutes }
+        let hours = minutes / 60
+        return "\(runs.count) run\(runs.count == 1 ? "" : "s") · \(hours > 0 ? "\(hours) h" : "\(minutes) min") of physics"
+    }
+
     var body: some View {
         NavigationStack {
             List {
+                if !runs.isEmpty {
+                    Text(summary).capsLabel()
+                        .listRowBackground(Color.clear).listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+                }
                 if !usedTags.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 6) {
@@ -39,26 +51,36 @@ struct RunsView: View {
                             }
                         }.buttonStyle(.plain)
                     }
-                    .listRowBackground(Color.clear).listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                    .listRowBackground(Color.clear).listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                 }
                 if let live = visible.first(where: \.isLive) {
                     Section {
                         NavigationLink(value: live) { RunRow(run: live, live: true) }
-                    } header: { Label("Recording now", systemImage: "record.circle").foregroundStyle(Palette.danger) }
-                }
-                ForEach(sections, id: \.0) { title, items in
-                    Section(title) {
-                        ForEach(items) { run in
-                            NavigationLink(value: run) { RunRow(run: run, live: false) }
-                                .swipeActions { Button("Delete", role: .destructive) { app.delete(run) } }
+                            .runCard(edge: .bright)
+                    } header: {
+                        HStack(spacing: 6) {
+                            Rectangle().fill(Palette.pink).frame(width: 7, height: 7).rotationEffect(.degrees(45))
+                            Text("Recording now").capsLabel(Palette.pink)
                         }
                     }
+                }
+                ForEach(sections, id: \.0) { title, items in
+                    Section {
+                        ForEach(items) { run in
+                            NavigationLink(value: run) { RunRow(run: run, live: false) }
+                                .runCard()
+                                .swipeActions { Button("Delete", role: .destructive) { app.delete(run) } }
+                        }
+                    } header: { Text(title).capsLabel() }
                 }
                 if runs.isEmpty {
                     ContentUnavailableView("No runs yet", systemImage: "list.bullet.rectangle",
                                            description: Text("Start logging on Now, or import SD-card CSVs with the download button."))
+                        .listRowBackground(Color.clear)
                 }
             }
+            .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(Palette.background)
             .navigationTitle("Runs")
@@ -101,25 +123,39 @@ struct RunsView: View {
     }
 }
 
+private extension View {
+    /// Each run is its own chamfered card inside the plain list (keeps swipe-to-delete).
+    func runCard(edge: PanelEdge = .hairline) -> some View {
+        listRowBackground(
+            ChamferedShape.panel().fill(Palette.panel)
+                .overlay { ChamferedShape.panel().strokeBorder(edge == .bright ? Palette.brightEdge : Palette.hairline, lineWidth: 1) }
+                .padding(.vertical, 4).padding(.horizontal, 16)
+        )
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: 10, leading: 30, bottom: 10, trailing: 26))
+    }
+}
+
 struct RunRow: View {
     let run: Run
     let live: Bool
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(run.name).font(.headline).lineLimit(1)
-                Text(summary).font(.subheadline).foregroundStyle(Palette.secondaryText).monospacedDigit()
+                Text(run.name).font(Typography.headline).foregroundStyle(Palette.ink).lineLimit(1)
+                Text(summary).font(Typography.monoCaption).foregroundStyle(Palette.secondaryText).lineLimit(1).minimumScaleFactor(0.8)
+                if let note = healthNote { note }
                 if !run.tags.isEmpty {
                     HStack(spacing: 4) { ForEach(run.tags.prefix(3), id: \.self) { TagChip(tag: $0) } }
                 }
             }
             Spacer(minLength: 8)
-            Sparkline(values: hourly).frame(width: 90, height: 28)
+            Sparkline(values: hourly).frame(width: 80, height: 28)
             if run.exportedAt != nil {
                 Image(systemName: "checkmark.icloud").foregroundStyle(Palette.physics).accessibilityLabel("Saved to your cosmic folder")
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
     }
     private var summary: String {
         var s = run.start.formatted(.dateTime.month(.abbreviated).day())
@@ -127,6 +163,23 @@ struct RunRow: View {
         if let r = run.meanRate { s += String(format: " · %.1f /min", r) }
         if run.source == "sd" { s += " · SD" }
         return s
+    }
+    /// One-line chip when a pair scatters more than chance allows (e.g. Wi‑Fi pickup on mains).
+    /// Review fixes 3 and 6: neutral lilac, not pink, and never wraps onto two lines.
+    private var healthNote: AnyView? {
+        guard !live, let bad = Health.report(run.records).prefix(3).filter({ $0.level != .good && $0.level != .unknown }).max(by: { $0.fano < $1.fano }) else { return nil }
+        return AnyView(
+            HStack(spacing: 5) {
+                Image(systemName: "exclamationmark.triangle").font(.system(size: 10, weight: .semibold))
+                ChannelLabel(channel: bad.channel, size: 12, color: Palette.lilac)
+                Text(String(format: "raised %.2f · possible pickup", bad.fano)).lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .font(Typography.raleway(12, .semibold, relativeTo: .caption)).foregroundStyle(Palette.lilac)
+            .padding(.horizontal, 8).padding(.vertical, 3)
+            .background(Palette.lilac.opacity(0.1), in: ChamferedShape.chip)
+            .overlay { ChamferedShape.chip.strokeBorder(Palette.lilac.opacity(0.4), lineWidth: 1) }
+            .fixedSize(horizontal: false, vertical: true)
+        )
     }
     private var hourly: [Double] {
         let recs = run.records.filter(\.physics)
@@ -147,7 +200,7 @@ struct FolderImportView: View {
     var body: some View {
         NavigationStack {
             List(files, id: \.self, selection: $chosen) { u in
-                Text(u.lastPathComponent).font(.footnote.monospaced())
+                Text(u.lastPathComponent).font(Typography.monoCaption)
             }
             .environment(\.editMode, .constant(.active))
             .overlay { if files.isEmpty { ContentUnavailableView("No SD logs found", systemImage: "folder", description: Text("Put muon_….csv files anywhere in your cosmic folder, for example in rawData.")) } }
