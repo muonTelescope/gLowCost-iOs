@@ -134,14 +134,14 @@ struct ChannelEnvRow: View {
 struct ActivityPlot: View {
     let state: MuonActivity.ContentState
     var body: some View {
-        VStack(alignment: .trailing, spacing: 2) {
+        Group {
             if let series = state.recentPairs, series.count == 3, (series.first?.count ?? 0) > 1 {
                 PairLines(series: series).padding(.horizontal, 2).padding(.vertical, 2)
             } else {
                 MinuteBars(values: state.recent, tint: Palette.data)
             }
-            Text("last 30 min").font(Typography.monoFixed(9)).foregroundStyle(Palette.muted)
         }
+        .accessibilityHint("Last 30 minutes")
     }
 }
 

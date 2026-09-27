@@ -54,7 +54,7 @@ These updates require on-device checks for scrolling, background GPS and reconne
 
 ## Live Activity and run chart update — September 27, 2026
 
-- **Lock Screen Live Activity and expanded Dynamic Island** share one compact layout: rate with `/min` beside it, a wider and taller 30-minute pair-line plot, and one row with the three channel counts on the left and pressure · temperature (units kept) on the right. The sample age is right-aligned; Stop sits on its own row in the Island.
+- **Lock Screen Live Activity and expanded Dynamic Island** share one compact layout: rate with `/min` beside it, a wider, taller 30-minute pair-line plot (no caption, so it uses the full height), and one row with the three channel counts on the left and pressure · temperature (units kept) on the right. The sample age is right-aligned; Stop sits on its own row in the Island.
 - **Run rate chart:** the legend uses the same colour over/underlined CH labels as the Live Activity; Σ is enlarged to match CH with its paddle digits; the y-axis fits the rates and error bars with 8% headroom instead of rounding up to the next round number.
 - Not yet compiled in this update's environment; layout on the user's iPhone still needs checking.
 
