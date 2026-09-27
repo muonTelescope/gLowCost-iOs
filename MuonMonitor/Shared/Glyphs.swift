@@ -62,7 +62,14 @@ struct ChannelLabel: View {
                     }
                 }
             } else if channel == -1 {
-                Text("ΣCH").font(font(size))
+                // Σ is enlarged to match the height of CH with its stacked paddle digits.
+                HStack(alignment: .center, spacing: 1) {
+                    Text("Σ").font(font((size * 1.35).rounded()))
+                    Text("CH").font(font(size))
+                        .padding(.vertical, legendColor == nil ? 0 : 2)
+                        .overlay(alignment: .top) { if let legendColor { Rectangle().fill(legendColor).frame(height: 1.5) } }
+                        .overlay(alignment: .bottom) { if let legendColor { Rectangle().fill(legendColor).frame(height: 1.5) } }
+                }
             } else {
                 Text(Self.gpioNames[channel] ?? "CH").font(font(size))
             }

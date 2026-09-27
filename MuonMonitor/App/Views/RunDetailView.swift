@@ -222,6 +222,15 @@ struct RateChart: View {
         return bins.min { abs($0.date.timeIntervalSince(selected)) < abs($1.date.timeIntervalSince(selected)) }
     }
 
+    /// Fit the plotted data (error bars included) with a little headroom, instead of
+    /// rounding up to the next "nice" axis value and leaving the top of the chart empty.
+    private var yDomain: ClosedRange<Double> {
+        let values = bins.flatMap { [$0.rate - $0.error, $0.rate + $0.error] } + channels.flatMap { $0.map(\.rate) }
+        guard let lo = values.min(), let hi = values.max() else { return 0...1 }
+        let pad = max((hi - lo) * 0.08, 1)
+        return max(0, lo - pad)...(hi + pad)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
@@ -231,10 +240,7 @@ struct RateChart: View {
             }
             FlowLayout(spacing: 12) {
                 ForEach([-1] + Array(channels.indices), id: \.self) { ch in
-                    HStack(spacing: 4) {
-                        Rectangle().fill(ch < 0 ? Palette.data : Palette.pairs[ch]).frame(width: 14, height: 2)
-                        ChannelLabel(channel: ch, size: 13)
-                    }
+                    ChannelLabel(channel: ch, size: 13, legendColor: ch < 0 ? Palette.data : Palette.pairs[ch])
                 }
             }
             if bins.isEmpty {
@@ -271,7 +277,7 @@ struct RateChart: View {
                         PointMark(x: .value("Time", b.date), y: .value("Rate", b.rate)).foregroundStyle(Palette.data).symbolSize(60)
                     }
                 }
-                .chartYScale(domain: .automatic(includesZero: false))
+                .chartYScale(domain: yDomain)
                 .chartXAxis { AxisMarks { _ in AxisGridLine().foregroundStyle(Palette.grid); AxisValueLabel().font(Typography.mono(10, .regular, relativeTo: .caption2)).foregroundStyle(Palette.secondaryText) } }
                 .chartYAxis { AxisMarks { _ in AxisGridLine().foregroundStyle(Palette.grid); AxisValueLabel().font(Typography.mono(10, .regular, relativeTo: .caption2)).foregroundStyle(Palette.secondaryText) } }
                 .chartXSelection(value: $selected)
