@@ -30,17 +30,11 @@ struct MuonLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(alignment: .bottom, spacing: 12) {
-                            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                                Text(stale ? "—" : s.total.map(String.init) ?? "—")
-                                    .font(Typography.monoFixed(36, .medium)).foregroundStyle(Palette.ink)
-                                    .lineLimit(1).minimumScaleFactor(0.7)
-                                Text("/min").font(Typography.monoFixed(11)).foregroundStyle(Palette.data)
-                            }
-                            ActivityPlot(state: s).frame(maxWidth: .infinity).frame(height: 42)
+                            RateReadout(total: s.total, stale: stale)
+                            ActivityPlot(state: s).frame(maxWidth: .infinity).frame(height: 48)
                         }
-                        ActivityLegend(pairs: s.pairs)
-                        HStack(spacing: 8) {
-                            EnvLine(state: s).layoutPriority(1)
+                        ChannelEnvRow(state: s)
+                        HStack {
                             Spacer(minLength: 0)
                             Button(intent: StopLoggingIntent()) {
                                 Text("Stop").font(Typography.raleway(11, .bold)).foregroundStyle(Palette.ink)
@@ -86,26 +80,53 @@ struct LockScreenActivity: View {
                 MuonMark(size: 14, color: Palette.lilac)
                 Text("MuonP4").font(Typography.raleway(14, .bold)).foregroundStyle(Palette.ink)
                 PhasePill(phase: stale ? .overdue : state.phase)
-                Spacer(minLength: 2)
+                // A live relative date claims all offered width, so align it explicitly.
                 if let d = state.sampleDate {
                     Text("\(Text(d, style: .relative)) ago").font(Typography.monoFixed(10))
                         .foregroundStyle(Palette.muted).lineLimit(1).minimumScaleFactor(0.8)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                } else {
+                    Spacer(minLength: 0)
                 }
             }
             HStack(alignment: .bottom, spacing: 12) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(stale ? "—" : state.total.map(String.init) ?? "—")
-                        .font(Typography.monoFixed(36, .medium)).foregroundStyle(Palette.ink)
-                        .lineLimit(1).minimumScaleFactor(0.6)
-                    Text("coincidences / min").font(Typography.monoFixed(10)).foregroundStyle(Palette.data)
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                }
-                ActivityPlot(state: state).frame(maxWidth: .infinity).frame(height: 44)
+                RateReadout(total: state.total, stale: stale)
+                ActivityPlot(state: state).frame(maxWidth: .infinity).frame(height: 52)
             }
-            ActivityLegend(pairs: state.pairs)
-            EnvLine(state: state).frame(maxWidth: .infinity, alignment: .trailing)
+            ChannelEnvRow(state: state)
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
+    }
+}
+
+/// Headline coincidence rate with its unit beside it, leaving the row's width to the plot.
+struct RateReadout: View {
+    let total: Int?
+    let stale: Bool
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(stale ? "—" : total.map(String.init) ?? "—")
+                .font(Typography.monoFixed(36, .medium)).foregroundStyle(Palette.ink)
+                .lineLimit(1).minimumScaleFactor(0.7)
+            Text("/min").font(Typography.monoFixed(11)).foregroundStyle(Palette.data)
+        }
+        .fixedSize()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(stale ? "no current" : total.map(String.init) ?? "no") coincidences per minute")
+    }
+}
+
+/// Compact channel counts on the left, pressure and temperature on the right, one line.
+/// The channel counts keep full size; the environment text shrinks first if space is short.
+struct ChannelEnvRow: View {
+    let state: MuonActivity.ContentState
+    var body: some View {
+        HStack(alignment: .center, spacing: 8) {
+            ActivityLegend(pairs: state.pairs).fixedSize().layoutPriority(1)
+            Spacer(minLength: 4)
+            EnvLine(state: state)
+        }
     }
 }
 
@@ -127,14 +148,14 @@ struct ActivityPlot: View {
 struct ActivityLegend: View {
     let pairs: [Int]
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             ForEach(0..<3, id: \.self) { i in
                 HStack(spacing: 3) {
                     ChannelLabel(channel: i, size: 12, color: Palette.muted, fixed: true, legendColor: Palette.pairs[i])
                     Text(pairs.count > i ? "\(pairs[i])" : "—")
                         .font(Typography.monoFixed(12, .medium)).foregroundStyle(Palette.ink)
-                        .lineLimit(1).minimumScaleFactor(0.7)
-                }.frame(maxWidth: .infinity, alignment: .leading)
+                        .lineLimit(1)
+                }
             }
         }
     }
@@ -156,12 +177,18 @@ struct PhasePill: View {
 struct EnvLine: View {
     let state: MuonActivity.ContentState
     var body: some View {
-        HStack(spacing: 4) {
-            if let p = state.pressure { Text(String(format: "%.1f hPa", p)).foregroundStyle(Palette.pressure).fixedSize() }
-            if state.pressure != nil, state.temperature != nil { Text("·").foregroundStyle(Palette.muted) }
-            if let t = state.temperature { Text(String(format: "%.1f °C", t)).foregroundStyle(Palette.temperature).fixedSize() }
+        // One Text so the whole line scales together; units are never dropped.
+        let p = state.pressure.map { Text(verbatim: String(format: "%.1f hPa", $0)).foregroundStyle(Palette.pressure) }
+        let t = state.temperature.map { Text(verbatim: String(format: "%.1f °C", $0)).foregroundStyle(Palette.temperature) }
+        let line: Text
+        switch (p, t) {
+        case let (p?, t?): line = Text("\(p)\(Text(verbatim: " · ").foregroundStyle(Palette.muted))\(t)")
+        case let (p?, nil): line = p
+        case let (nil, t?): line = t
+        case (nil, nil): line = Text(verbatim: "")
         }
-        .font(Typography.monoFixed(11))
-        .lineLimit(1).fixedSize(horizontal: true, vertical: false)
+        return line
+            .font(Typography.monoFixed(11))
+            .lineLimit(1).minimumScaleFactor(0.75)
     }
 }
