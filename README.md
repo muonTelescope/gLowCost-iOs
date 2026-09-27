@@ -35,7 +35,7 @@ Core tests and signed iPhone builds pass. The new firmware has not been flashed 
   <img src="design/renders/Widgets.png" height="420" alt="Home widgets and Control Center">
 </p>
 
-<sub>Rendered from the design canvas (September 27, 2026) with placeholder data. The Lock Screen and Dynamic Island match the current Swift layout; other screens may lag the app (for example, the app no longer shows a logging banner above the tab bar). All renders are in <a href="design/renders/">design/renders/</a>.</sub>
+<sub>Rendered from the design canvas (September 27, 2026) with placeholder data. The Lock Screen and Dynamic Island match the current Swift layout, and Now shows the logging bar inside the page as the app does; other screens may lag the app. All renders are in <a href="design/renders/">design/renders/</a>.</sub>
 
 ## Live logging and layout update — September 27, 2026
 
