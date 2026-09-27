@@ -1,0 +1,15 @@
+// MuonP4 build settings. Edit here, not in the project file.
+
+// Your team: Xcode › Settings › Accounts › (your Apple ID) › Personal Team.
+// You can also leave this empty and pick the team under Signing & Capabilities.
+MUON_TEAM =
+
+// Must be unique to you. A free Personal Team can register up to 10 new IDs a week.
+MUON_BUNDLE_ID = com.sawaiz.muonp4
+
+// App Group shared by the app and its widgets (Home Screen widgets, Control Center).
+// If Xcode reports it cannot register the App Group for your account, empty the
+// three lines below. Everything except Home Screen widgets keeps working.
+MUON_APP_GROUP = group.$(MUON_BUNDLE_ID)
+MUON_APP_ENTITLEMENTS = App/App.entitlements
+MUON_WIDGET_ENTITLEMENTS = Widget/Widget.entitlements
