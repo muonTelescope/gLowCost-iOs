@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dynamic Island</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&amp;family=Raleway:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-variant-numeric:lining-nums;font-family:'Raleway',-apple-system,'Helvetica Neue',sans-serif;background:#16111F;color:#EEE9F5}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.cap{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:#A89CBF;font-weight:500}
+button{font-family:inherit}
+.chn{font-family:'IBM Plex Mono',ui-monospace,monospace;display:inline-flex;align-items:center;font-weight:500}
+.ss{display:inline-flex;flex-direction:column;font-size:.58em;line-height:.98;margin-left:1px}
+.pn,.ct{position:relative;isolation:isolate;border:0;background:transparent;--c:14px;--bg:linear-gradient(180deg,#231C33,#1C1628 42%);--bd:#3A2F4F}
+.ct{--c:8px}
+.pn::before,.ct::before,.pn::after,.ct::after{content:"";position:absolute;inset:0;pointer-events:none}
+.pn::before,.ct::before{z-index:-1;background:var(--bg)}
+.pn::after,.ct::after{z-index:3;background:var(--bd)}
+.pn::before,.pn.clip{clip-path:polygon(0 0,calc(100% - var(--c)) 0,100% var(--c),100% 100%,var(--c) 100%,0 calc(100% - var(--c)))}
+.pn::after{clip-path:polygon(evenodd,0 0,calc(100% - var(--c)) 0,100% var(--c),100% 100%,var(--c) 100%,0 calc(100% - var(--c)),0 0,1px 1px,1px calc(100% - var(--c) - .41px),calc(var(--c) + .41px) calc(100% - 1px),calc(100% - 1px) calc(100% - 1px),calc(100% - 1px) calc(var(--c) + .41px),calc(100% - var(--c) - .41px) 1px,1px 1px)}
+.ct::before,.ct.clip{clip-path:polygon(var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0 calc(100% - var(--c)),0 var(--c))}
+.ct::after{clip-path:polygon(evenodd,var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0 calc(100% - var(--c)),0 var(--c),var(--c) 0,calc(var(--c) + .41px) 1px,1px calc(var(--c) + .41px),1px calc(100% - var(--c) - .41px),calc(var(--c) + .41px) calc(100% - 1px),calc(100% - var(--c) - .41px) calc(100% - 1px),calc(100% - 1px) calc(100% - var(--c) - .41px),calc(100% - 1px) calc(var(--c) + .41px),calc(100% - var(--c) - .41px) 1px,calc(var(--c) + .41px) 1px)}
+.gl::before{backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%)}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 36px 10px; background: #16111F; display: flex; flex-direction: column; gap: 34px">
+
+  <div style="display: flex; flex-direction: column; gap: 12px; align-items: center">
+    <span class="cap">Compact · counting</span>
+    <div style="width: 250px; height: 37px; border-radius: 19px; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; box-sizing: border-box">
+      <svg width="18" height="18" viewBox="0 0 28 28" fill="none" stroke="#C9B6FF" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M10 2l-3 24M17 2l1 24M23 3l-8 22"></path></svg>
+      <span class="mono" style="font-size: 15px; font-weight: 500; color: #C9B6FF">60</span>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 24px; justify-content: center">
+    <div style="display: flex; flex-direction: column; gap: 12px; align-items: center">
+      <span class="cap">Compact · overdue</span>
+      <div style="width: 250px; height: 37px; border-radius: 19px; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; box-sizing: border-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF8FB1" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4.5 9.5a10.6 10.6 0 0 1 15 0M7.5 12.5a6.4 6.4 0 0 1 9 0M3 3l18 18"></path></svg>
+        <span class="mono" style="font-size: 13px; color: #FF8FB1">3 min</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 40px; justify-content: center; align-items: flex-end">
+    <div style="display: flex; flex-direction: column; gap: 12px; align-items: center">
+      <span class="cap">Minimal</span>
+      <div style="width: 37px; height: 37px; border-radius: 19px; background: #000; display: flex; align-items: center; justify-content: center">
+        <span class="mono" style="font-size: 13px; font-weight: 500; color: #C9B6FF">60</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px; align-items: center">
+      <span class="cap">Compact · setup</span>
+      <div style="width: 190px; height: 37px; border-radius: 19px; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; box-sizing: border-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C9B6FF" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg>
+        <span class="mono" style="font-size: 13px; color: #C9B6FF">1:52</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px; align-items: center">
+    <span class="cap">Expanded · long press</span>
+    <div style="width: 370px; border-radius: 44px; background: #000; padding: 16px 12px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px">
+      <div style="display: flex; align-items: center; padding: 0 10px 4px"><span style="display: flex; align-items: center; gap: 6px"><svg width="13" height="16" viewBox="0 0 12.8 16" fill="none" stroke="#C9B6FF" stroke-width="1.8" stroke-linecap="square" aria-hidden="true"><path d="M2.8 0L5.1 16M6.7 0L10.0 16M1.0 8.3H11.8"></path></svg><span style="font-size: 15px; font-weight: 700">MuonP4</span></span><span style="margin-left: auto"><span class="ct" style="--c: 4px; --bg: rgba(91,227,160,.16); --bd: rgba(91,227,160,.45); padding: 2px 7px; color: #5BE3A0; font-size: 11px; font-weight: 700">Physics</span></span></div>
+      <div style="display: flex; align-items: flex-end; gap: 12px"><div style="display: flex; align-items: baseline; gap: 4px; flex-shrink: 0"><span class="mono" style="font-size: 36px; font-weight: 500; line-height: 1; color: #EEE9F5">60</span><span class="mono" style="font-size: 11px; color: #5BE3A0">/min</span></div><div style="flex-grow: 1; min-width: 0; height: 48px; display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><svg viewBox="0 0 240 48" preserveAspectRatio="none" style="width: 100%; flex-grow: 1; min-height: 0" aria-label="Coincidences per minute for the three pairs, last 30 minutes"><polyline points="0.0,18.0 8.3,10.0 16.6,16.0 24.8,18.0 33.1,22.0 41.4,16.0 49.7,6.0 57.9,12.0 66.2,6.0 74.5,14.0 82.8,12.0 91.0,14.0 99.3,28.0 107.6,8.0 115.9,10.0 124.1,12.0 132.4,28.0 140.7,28.0 149.0,22.0 157.2,18.0 165.5,12.0 173.8,16.0 182.1,10.0 190.3,20.0 198.6,12.0 206.9,12.0 215.2,20.0 223.4,2.0 231.7,10.0 240.0,14.0" fill="none" stroke="#5BE3A0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline><polyline points="0.0,34.0 8.3,34.0 16.6,32.0 24.8,30.0 33.1,24.0 41.4,28.0 49.7,32.0 57.9,36.0 66.2,34.0 74.5,20.0 82.8,36.0 91.0,28.0 99.3,26.0 107.6,40.0 115.9,28.0 124.1,18.0 132.4,46.0 140.7,32.0 149.0,30.0 157.2,36.0 165.5,26.0 173.8,30.0 182.1,40.0 190.3,22.0 198.6,24.0 206.9,22.0 215.2,18.0 223.4,26.0 231.7,28.0 240.0,28.0" fill="none" stroke="#A6F5CF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline><polyline points="0.0,14.0 8.3,24.0 16.6,22.0 24.8,30.0 33.1,26.0 41.4,24.0 49.7,8.0 57.9,36.0 66.2,30.0 74.5,18.0 82.8,8.0 91.0,14.0 99.3,34.0 107.6,40.0 115.9,16.0 124.1,24.0 132.4,28.0 140.7,12.0 149.0,10.0 157.2,18.0 165.5,18.0 173.8,16.0 182.1,6.0 190.3,14.0 198.6,14.0 206.9,14.0 215.2,32.0 223.4,8.0 231.7,12.0 240.0,18.0" fill="none" stroke="#C9B6FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline></svg></div></div>
+      <div style="display: flex; align-items: center; gap: 8px"><div style="display: flex; gap: 10px; flex-shrink: 0"><span style="display: inline-flex; align-items: center; gap: 3px"><span class="chn" style="font-size: 12px; color: #A89CBF"><span style="padding: 2px 0; border-top: 1.5px solid #5BE3A0; border-bottom: 1.5px solid #5BE3A0; line-height: 1">CH</span><span class="ss"><span>0</span><span>1</span></span></span><span class="mono" style="font-size: 12px; font-weight: 500; color: #EEE9F5">23</span></span><span style="display: inline-flex; align-items: center; gap: 3px"><span class="chn" style="font-size: 12px; color: #A89CBF"><span style="padding: 2px 0; border-top: 1.5px solid #A6F5CF; border-bottom: 1.5px solid #A6F5CF; line-height: 1">CH</span><span class="ss"><span>0</span><span>2</span></span></span><span class="mono" style="font-size: 12px; font-weight: 500; color: #EEE9F5">16</span></span><span style="display: inline-flex; align-items: center; gap: 3px"><span class="chn" style="font-size: 12px; color: #A89CBF"><span style="padding: 2px 0; border-top: 1.5px solid #C9B6FF; border-bottom: 1.5px solid #C9B6FF; line-height: 1">CH</span><span class="ss"><span>1</span><span>2</span></span></span><span class="mono" style="font-size: 12px; font-weight: 500; color: #EEE9F5">21</span></span></div><span class="mono" style="margin-left: auto; font-size: 11px; white-space: nowrap"><span style="color: #9B7BFF">982.3 hPa</span><span style="color: #A89CBF"> · </span><span style="color: #5BE3A0">24.0 °C</span></span></div>
+      <div style="display: flex; justify-content: flex-end"><button style="border: 0; border-radius: 999px; background: rgba(155,123,255,.35); height: 28px; padding: 0 14px; color: #EEE9F5; font-size: 11px; font-weight: 700">Stop</button></div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

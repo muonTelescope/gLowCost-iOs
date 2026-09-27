@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lock Screen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&amp;family=Raleway:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;font-variant-numeric:lining-nums;font-family:'Raleway',-apple-system,'Helvetica Neue',sans-serif;background:#120E1A;color:#EEE9F5}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.glass{background:rgba(32,25,45,.5);backdrop-filter:blur(26px) saturate(170%);-webkit-backdrop-filter:blur(26px) saturate(170%);border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+.cap{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:#CFC6DE;font-weight:500}
+.chn{font-family:'IBM Plex Mono',ui-monospace,monospace;display:inline-flex;align-items:center;font-weight:500}
+.ss{display:inline-flex;flex-direction:column;font-size:.58em;line-height:.98;margin-left:1px}
+.pn,.ct{position:relative;isolation:isolate;border:0;background:transparent;--c:14px;--bg:linear-gradient(180deg,#231C33,#1C1628 42%);--bd:#3A2F4F}
+.ct{--c:8px}
+.pn::before,.ct::before,.pn::after,.ct::after{content:"";position:absolute;inset:0;pointer-events:none}
+.pn::before,.ct::before{z-index:-1;background:var(--bg)}
+.pn::after,.ct::after{z-index:3;background:var(--bd)}
+.pn::before,.pn.clip{clip-path:polygon(0 0,calc(100% - var(--c)) 0,100% var(--c),100% 100%,var(--c) 100%,0 calc(100% - var(--c)))}
+.pn::after{clip-path:polygon(evenodd,0 0,calc(100% - var(--c)) 0,100% var(--c),100% 100%,var(--c) 100%,0 calc(100% - var(--c)),0 0,1px 1px,1px calc(100% - var(--c) - .41px),calc(var(--c) + .41px) calc(100% - 1px),calc(100% - 1px) calc(100% - 1px),calc(100% - 1px) calc(var(--c) + .41px),calc(100% - var(--c) - .41px) 1px,1px 1px)}
+.ct::before,.ct.clip{clip-path:polygon(var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0 calc(100% - var(--c)),0 var(--c))}
+.ct::after{clip-path:polygon(evenodd,var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0 calc(100% - var(--c)),0 var(--c),var(--c) 0,calc(var(--c) + .41px) 1px,1px calc(var(--c) + .41px),1px calc(100% - var(--c) - .41px),calc(var(--c) + .41px) calc(100% - 1px),calc(100% - var(--c) - .41px) calc(100% - 1px),calc(100% - 1px) calc(100% - var(--c) - .41px),calc(100% - 1px) calc(var(--c) + .41px),calc(100% - var(--c) - .41px) 1px,calc(var(--c) + .41px) 1px)}
+.gl::before{backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%)}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #120E1A; display: flex; flex-direction: column; align-items: center">
+  <svg width="390" height="844" viewBox="0 0 390 844" style="position: absolute; left: 0; top: 0" aria-hidden="true">
+    <line x1="80" y1="0" x2="120" y2="844" stroke="#C9B6FF" stroke-opacity="0.07"></line><line x1="210" y1="0" x2="190" y2="844" stroke="#C9B6FF" stroke-opacity="0.1"></line><line x1="300" y1="0" x2="360" y2="844" stroke="#C9B6FF" stroke-opacity="0.06"></line><line x1="30" y1="0" x2="-20" y2="844" stroke="#C9B6FF" stroke-opacity="0.08"></line>
+  </svg>
+
+  <div style="position: relative; margin-top: 70px; display: flex; flex-direction: column; align-items: center; gap: 2px">
+    <span style="font-size: 18px; font-weight: 500; color: #DCD4EA">Friday, September 25</span>
+    <span style="font-size: 96px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; color: #EEE9F5">8:25</span>
+  </div>
+
+  <div style="position: relative; margin-top: 14px; display: flex; gap: 10px; align-items: center">
+    <div class="glass" style="width: 64px; height: 64px; border-radius: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative">
+      <svg width="64" height="64" viewBox="0 0 64 64" style="position: absolute; left: 0; top: 0" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4" stroke-dasharray="127 170" transform="rotate(135 32 32)" stroke-linecap="round"></circle><circle cx="32" cy="32" r="27" fill="none" stroke="#EEE9F5" stroke-width="4" stroke-dasharray="85 170" transform="rotate(135 32 32)" stroke-linecap="round"></circle></svg>
+      <span class="mono" style="font-size: 18px; font-weight: 500">60</span><span style="font-size: 9px; color: #CFC6DE">/min</span>
+    </div>
+    <div class="glass" style="width: 64px; height: 64px; border-radius: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EEE9F5" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"></path></svg>
+      <span class="mono" style="font-size: 14px">982</span><span style="font-size: 9px; color: #CFC6DE">hPa</span>
+    </div>
+    <div class="glass" style="width: 150px; height: 64px; border-radius: 18px; padding: 8px 12px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 2px">
+      <span style="font-size: 13px; font-weight: 600">External battery</span>
+      <span class="mono" style="font-size: 12px; color: #CFC6DE">17 h 41 m logged</span>
+      <span style="font-size: 11px; color: #CFC6DE">60,348 muons</span>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 12px; right: 12px; bottom: 116px; border-radius: 28px; background: rgba(18,14,26,.85); padding: 12px 16px; display: flex; flex-direction: column; gap: 6px">
+    <div style="display: flex; align-items: center; gap: 6px"><svg width="11" height="14" viewBox="0 0 11.2 14" fill="none" stroke="#C9B6FF" stroke-width="1.6" stroke-linecap="square" aria-hidden="true"><path d="M2.5 0L4.5 14M5.8 0L8.7 14M0.9 7.3H10.3"></path></svg><span style="font-size: 14px; font-weight: 700">MuonP4</span><span class="ct" style="--c: 4px; --bg: rgba(91,227,160,.16); --bd: rgba(91,227,160,.45); padding: 2px 7px; color: #5BE3A0; font-size: 11px; font-weight: 700">Physics</span><span class="mono" style="margin-left: auto; font-size: 10px; color: #A89CBF; white-space: nowrap">14 sec ago</span></div>
+    <div style="display: flex; align-items: flex-end; gap: 12px"><div style="display: flex; align-items: baseline; gap: 4px; flex-shrink: 0"><span class="mono" style="font-size: 36px; font-weight: 500; line-height: 1; color: #EEE9F5">60</span><span class="mono" style="font-size: 11px; color: #5BE3A0">/min</span></div><div style="flex-grow: 1; min-width: 0; height: 52px; display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><svg viewBox="0 0 240 52" preserveAspectRatio="none" style="width: 100%; flex-grow: 1; min-height: 0" aria-label="Coincidences per minute for the three pairs, last 30 minutes"><polyline points="0.0,19.5 8.3,10.7 16.6,17.3 24.8,19.5 33.1,23.8 41.4,17.3 49.7,6.4 57.9,12.9 66.2,6.4 74.5,15.1 82.8,12.9 91.0,15.1 99.3,30.4 107.6,8.5 115.9,10.7 124.1,12.9 132.4,30.4 140.7,30.4 149.0,23.8 157.2,19.5 165.5,12.9 173.8,17.3 182.1,10.7 190.3,21.6 198.6,12.9 206.9,12.9 215.2,21.6 223.4,2.0 231.7,10.7 240.0,15.1" fill="none" stroke="#5BE3A0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline><polyline points="0.0,36.9 8.3,36.9 16.6,34.7 24.8,32.5 33.1,26.0 41.4,30.4 49.7,34.7 57.9,39.1 66.2,36.9 74.5,21.6 82.8,39.1 91.0,30.4 99.3,28.2 107.6,43.5 115.9,30.4 124.1,19.5 132.4,50.0 140.7,34.7 149.0,32.5 157.2,39.1 165.5,28.2 173.8,32.5 182.1,43.5 190.3,23.8 198.6,26.0 206.9,23.8 215.2,19.5 223.4,28.2 231.7,30.4 240.0,30.4" fill="none" stroke="#A6F5CF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline><polyline points="0.0,15.1 8.3,26.0 16.6,23.8 24.8,32.5 33.1,28.2 41.4,26.0 49.7,8.5 57.9,39.1 66.2,32.5 74.5,19.5 82.8,8.5 91.0,15.1 99.3,36.9 107.6,43.5 115.9,17.3 124.1,26.0 132.4,30.4 140.7,12.9 149.0,10.7 157.2,19.5 165.5,19.5 173.8,17.3 182.1,6.4 190.3,15.1 198.6,15.1 206.9,15.1 215.2,34.7 223.4,8.5 231.7,12.9 240.0,19.5" fill="none" stroke="#C9B6FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline></svg></div></div>
+    <div style="display: flex; align-items: center; gap: 8px"><div style="display: flex; gap: 10px; flex-shrink: 0"><span style="display: inline-flex; align-items: center; gap: 3px"><span class="chn" style="font-size: 12px; color: #A89CBF"><span style="padding: 2px 0; border-top: 1.5px solid #5BE3A0; border-bottom: 1.5px solid #5BE3A0; line-height: 1">CH</span><span class="ss"><span>0</span><span>1</span></span></span><span class="mono" style="font-size: 12px; font-weight: 500; color: #EEE9F5">23</span></span><span style="display: inline-flex; align-items: center; gap: 3px"><span class="chn" style="font-size: 12px; color: #A89CBF"><span style="padding: 2px 0; border-top: 1.5px solid #A6F5CF; border-bottom: 1.5px solid #A6F5CF; line-height: 1">CH</span><span class="ss"><span>0</span><span>2</span></span></span><span class="mono" style="font-size: 12px; font-weight: 500; color: #EEE9F5">16</span></span><span style="display: inline-flex; align-items: center; gap: 3px"><span class="chn" style="font-size: 12px; color: #A89CBF"><span style="padding: 2px 0; border-top: 1.5px solid #C9B6FF; border-bottom: 1.5px solid #C9B6FF; line-height: 1">CH</span><span class="ss"><span>1</span><span>2</span></span></span><span class="mono" style="font-size: 12px; font-weight: 500; color: #EEE9F5">21</span></span></div><span class="mono" style="margin-left: auto; font-size: 11px; white-space: nowrap"><span style="color: #9B7BFF">982.3 hPa</span><span style="color: #A89CBF"> · </span><span style="color: #5BE3A0">24.0 °C</span></span></div>
+  </div>
+
+  <div style="position: absolute; left: 44px; right: 44px; bottom: 40px; display: flex; justify-content: space-between">
+    <div class="glass" style="width: 50px; height: 50px; border-radius: 25px; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EEE9F5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="miter" aria-hidden="true"><path d="M8 3h8l-1 6H9zM9 9v12h6V9"></path></svg></div>
+    <div class="glass" style="width: 50px; height: 50px; border-radius: 25px; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EEE9F5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="miter" aria-hidden="true"><rect x="3" y="7" width="18" height="13"></rect><circle cx="12" cy="13.5" r="3.5"></circle><path d="M9 7l1.5-2h3L15 7"></path></svg></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
