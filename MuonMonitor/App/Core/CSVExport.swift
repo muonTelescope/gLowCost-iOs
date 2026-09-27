@@ -8,19 +8,22 @@ enum CSVExport {
     static func csv(_ minutes: [MinuteRecord]) -> String {
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime]
-        var s = header
+        let base = Set(header.trimmingCharacters(in: .newlines).split(separator: ",").map(String.init))
+        let extras = Set(minutes.flatMap { Array(($0.diagnostics ?? [:]).keys) }).subtracting(base).sorted()
+        var s = header.trimmingCharacters(in: .newlines) + (extras.isEmpty ? "" : "," + extras.joined(separator: ",")) + "\n"
         s.reserveCapacity(minutes.count * 120)
         for m in minutes.sorted(by: { $0.epoch < $1.epoch }) {
             func f(_ v: Double?, _ digits: Int) -> String { v.map { String(format: "%.\(digits)f", $0) } ?? "" }
             let counts = (0..<7).map { m.counts.indices.contains($0) && m.counts[$0] >= 0 ? String(m.counts[$0]) : "" }
-            let fields: [String] = [
+            var fields: [String] = [
                 String(Int(m.epoch.rounded())), iso.string(from: m.date), m.sequence >= 0 ? String(m.sequence) : "", m.bootID,
                 String(m.intervalMS), m.physics ? "1" : "0",
             ] + counts + [
                 f(m.temperature, 3), f(m.pressure, 3), f(m.latitude, 6), f(m.longitude, 6), f(m.altitude, 1), f(m.horizontalAccuracy, 1),
-                m.fromSD ? "sd" : "phone",
+                m.fromSD ? "SD_backfill" : "BLE",
             ]
-            s += fields.joined(separator: ",") + "\n"
+            fields += extras.map { m.diagnostics?[$0] ?? "" }
+            s += fields.map { $0.replacingOccurrences(of: ",", with: ";").replacingOccurrences(of: "\n", with: " ") }.joined(separator: ",") + "\n"
         }
         return s
     }

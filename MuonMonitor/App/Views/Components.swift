@@ -140,7 +140,7 @@ extension TimeInterval {
     /// 17 h 41 m
     var hoursMinutes: String {
         let m = Int(self / 60)
-        return m >= 60 ? "\(m / 60) h \(m % 60) m" : "\(m) m"
+        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m)m"
     }
 }
 

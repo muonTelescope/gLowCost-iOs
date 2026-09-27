@@ -33,6 +33,8 @@ final class DetectorLink: NSObject, CBCentralManagerDelegate, CBPeripheralDelega
     @ObservationIgnored private var commandChar: CBCharacteristic?
     @ObservationIgnored private var responseChar: CBCharacteristic?
     @ObservationIgnored private var readPending = false
+    @ObservationIgnored private var readStarted = Date.distantPast
+    @ObservationIgnored var onDiagnostic: ((String) -> Void)?
     @ObservationIgnored private var wantsConnection = false
     @ObservationIgnored private var browsing = false
     @ObservationIgnored private var controlContinuation: CheckedContinuation<[String: Any], Error>?
@@ -109,11 +111,15 @@ final class DetectorLink: NSObject, CBCentralManagerDelegate, CBPeripheralDelega
     }
 
     func centralManager(_ c: CBCentralManager, willRestoreState dict: [String: Any]) {
+        onDiagnostic?("Core Bluetooth state restoration")
         guard let items = dict[CBCentralManagerRestoredStatePeripheralsKey] as? [CBPeripheral], let p = items.first else { return }
         wantsConnection = UserDefaults.standard.bool(forKey: "logging")
         guard wantsConnection else { return }
         peripheral = p; p.delegate = self
+        readPending = false
         if p.state == .connected { state = .connected; p.discoverServices([Self.service]) }
+        else if p.state == .disconnected { state = .connecting; central.connect(p, options: nil) }
+        else { state = .connecting }
     }
 
     func centralManager(_ c: CBCentralManager, didDiscover p: CBPeripheral, advertisementData ad: [String: Any], rssi RSSI: NSNumber) {
@@ -149,6 +155,7 @@ final class DetectorLink: NSObject, CBCentralManagerDelegate, CBPeripheralDelega
     func centralManager(_ c: CBCentralManager, didDisconnectPeripheral p: CBPeripheral, error: Error?) { lost(p) }
 
     private func lost(_ p: CBPeripheral) {
+        onDiagnostic?("BLE disconnected; reconnect requested")
         sampleChar = nil; commandChar = nil; responseChar = nil; readPending = false; controlsReady = false
         finishControl(.failure(LinkError("Bluetooth connection lost")))
         onDisconnect?()
@@ -176,8 +183,9 @@ final class DetectorLink: NSObject, CBCentralManagerDelegate, CBPeripheralDelega
     }
 
     private func read(_ p: CBPeripheral, _ c: CBCharacteristic) {
-        guard !readPending else { return }
-        readPending = true; p.readValue(for: c)
+        if readPending, Date().timeIntervalSince(readStarted) <= 20 { return }
+        if readPending { onDiagnostic?("Retrying stalled telemetry read") }
+        readPending = true; readStarted = Date(); p.readValue(for: c)
     }
 
     /// Ask for the current telemetry now (e.g. when the app comes to the foreground).
@@ -186,7 +194,7 @@ final class DetectorLink: NSObject, CBCentralManagerDelegate, CBPeripheralDelega
     func peripheral(_ p: CBPeripheral, didUpdateValueFor c: CBCharacteristic, error: Error?) {
         if c.uuid == Self.responseID { receiveControl(p, c, error); return }
         guard c.uuid == Self.sampleID else { return }
-        if let error { readPending = false; problem = "Read failed: \(error.localizedDescription)"; return }
+        if let error { onDiagnostic?("Telemetry read failed: \(error.localizedDescription)"); readPending = false; problem = "Read failed: \(error.localizedDescription)"; return }
         guard let data = c.value else { readPending = false; return }
         // 8-byte notify token "M N 04 …": read the full value.
         if data.count == 8, data[0] == 77, data[1] == 78, data[2] == 4 { read(p, c); return }
@@ -277,6 +285,28 @@ final class DetectorLink: NSObject, CBCentralManagerDelegate, CBPeripheralDelega
         try? FileManager.default.removeItem(at: final)
         try FileManager.default.moveItem(at: part, to: final)
         return final
+    }
+
+    /// Immutable boot/sequence records. A cancelled row restarts; committed rows are never re-fetched.
+    func readRecord(boot: String, sequence: Int) async throws -> String {
+        var data = Data(), expectedLength: Int?, expectedHash: UInt32?
+        repeat {
+            try Task.checkCancellation()
+            let reply = try await command("record", ["boot": boot, "seq": sequence, "offset": data.count])
+            guard let raw = reply["data"] as? String, let part = Data(base64Encoded: raw),
+                  let next = reply["next"] as? Int, next == data.count + part.count,
+                  let length = reply["length"] as? Int, length > 0, length < 4096,
+                  let hash = (reply["hash"] as? NSNumber)?.uint32Value,
+                  expectedLength == nil || expectedLength == length, expectedHash == nil || expectedHash == hash,
+                  !part.isEmpty, next <= length else { throw LinkError("Invalid recovery record") }
+            expectedLength = length; expectedHash = hash; data.append(part)
+            if reply["eof"] as? Bool == true {
+                guard data.count == length, RecordIntegrity.hash(data) == hash,
+                      let text = String(data: data, encoding: .utf8), text.hasSuffix("\n") else { throw LinkError("Incomplete recovery record") }
+                return text
+            }
+        } while data.count < 4096
+        throw LinkError("Recovery record too large")
     }
 
     func listFiles() async throws -> [(name: String, size: Int, modified: Date)] {

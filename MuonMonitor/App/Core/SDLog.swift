@@ -60,11 +60,11 @@ enum SDLog {
         var previousEpoch: Double?
         var index = 0
         for r in rows.dropFirst() {
-            guard r.count > e, let epoch = Double(r[e]) else { continue }
+            guard r.count == header.count, let epoch = Double(r[e]), epoch.isFinite, (0...4102444800).contains(epoch) else { continue }
             defer { index += 1 }
-            guard epoch > 1.6e9 else { previousEpoch = nil; continue }   // unsynced clock rows cannot be placed in time
+            guard epoch > 1.6e9 || idx("boot_id") != nil else { previousEpoch = nil; continue }   // unsynced clock rows cannot be placed in time
             func int(_ i: Int?) -> Int? { guard let i, r.count > i else { return nil }; return Int(r[i]) }
-            func dbl(_ i: Int?) -> Double? { guard let i, r.count > i, !r[i].isEmpty else { return nil }; return Double(r[i]) }
+            func dbl(_ i: Int?) -> Double? { guard let i, r.count > i, !r[i].isEmpty else { return nil }; return Double(r[i]).flatMap { $0.isFinite ? $0 : nil } }
             let counts = chIdx.map { int($0) ?? -1 }
             let dt = previousEpoch.map { epoch - $0 }
             let intervalMS = int(interval) ?? Int(((dt ?? 60) * 1000).rounded())
@@ -72,9 +72,11 @@ enum SDLog {
             if let v = int(valid) { physics = v == 1 } else { physics = index >= 3 && (59_000...62_000).contains(intervalMS) }
             var t = dbl(temp), p = dbl(press)
             if p == nil, let env = interpolate(env, at: epoch) { t = env.t; p = env.p }
-            out.append(MinuteRecord(epoch: epoch, sequence: int(seq) ?? -1, bootID: "", intervalMS: intervalMS, physics: physics,
-                                    counts: counts, temperature: t, pressure: p, latitude: nil, longitude: nil, altitude: nil,
-                                    horizontalAccuracy: nil, fromSD: true))
+            var fields = Dictionary(zip(header, r).map { ($0.0, $0.1) }, uniquingKeysWith: { _, new in new })
+            if fields["detector_epoch"] == nil { fields["detector_epoch"] = fields["epoch"] }
+            out.append(MinuteRecord(epoch: epoch, sequence: int(seq) ?? -1, bootID: fields["boot_id"] ?? "", intervalMS: intervalMS, physics: physics,
+                                    counts: counts, temperature: t, pressure: p, latitude: dbl(idx("latitude")), longitude: dbl(idx("longitude")), altitude: dbl(idx("altitude_m")),
+                                    horizontalAccuracy: dbl(idx("h_accuracy_m")), fromSD: fields["source"] != "BLE", diagnostics: fields))
             previousEpoch = epoch
         }
         // Older files: flag isolated outliers (e.g. a 0-count minute during an HV transition) as non-physics.
@@ -107,13 +109,27 @@ enum SDLog {
     /// SD minute are the same minute when their end times are within 20 s.
     /// Returns only the SD minutes that were missing.
     static func missingMinutes(phone: [MinuteRecord], sd: [MinuteRecord]) -> [MinuteRecord] {
+        var existing = phone
+        var missing: [MinuteRecord] = []
         let have = phone.map(\.epoch).sorted()
-        guard let lo = have.first, let hi = have.last else { return sd }
-        return sd.filter { s in
-            guard s.epoch >= lo - 90, s.epoch <= hi + 90 else { return false }
-            var a = 0, b = have.count - 1
-            while b - a > 1 { let m = (a + b) / 2; if have[m] <= s.epoch { a = m } else { b = m } }
-            return min(abs(have[a] - s.epoch), abs(have[b] - s.epoch)) > 20
+        for row in sd {
+            // Identity wins over UTC: clock jumps must not merge distinct minutes.
+            if existing.contains(where: { sameMinute($0, row) }) { continue }
+            let sameBoot = !row.bootID.isEmpty && phone.contains { $0.bootID == row.bootID }
+            if sameBoot {
+                let sequences = phone.filter { $0.bootID == row.bootID }.map(\.sequence)
+                if let lo = sequences.min(), let hi = sequences.max(), !(max(0,lo-1)...hi+1).contains(row.sequence) { continue }
+            } else if let lo = have.first, let hi = have.last, !(lo-90...hi+90).contains(row.epoch) { continue }
+            missing.append(row); existing.append(row)
         }
+        return missing
+    }
+
+    static func sameMinute(_ a: MinuteRecord, _ b: MinuteRecord) -> Bool {
+        if !a.bootID.isEmpty, !b.bootID.isEmpty, a.sequence >= 0, b.sequence >= 0 {
+            return a.bootID == b.bootID && a.sequence == b.sequence
+        }
+        return abs(a.epoch - b.epoch) < 20
+
     }
 }

@@ -125,11 +125,10 @@ struct RootView: View {
                 Tab(t.title, systemImage: t.symbol, value: t) {
                     screen(t)
                         .toolbarVisibility(.hidden, for: .tabBar)
-                        .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: FloatingBars.reservedHeight) }
                 }
             }
         }
-        .overlay(alignment: .bottom) {
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             FloatingBars(tab: $tab, showPair: $showPair)
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
@@ -140,7 +139,6 @@ struct RootView: View {
 struct FloatingBars: View {
     @Binding var tab: AppTab
     @Binding var showPair: Bool
-    static let reservedHeight: CGFloat = 132
 
     var body: some View {
         VStack(spacing: 8) {

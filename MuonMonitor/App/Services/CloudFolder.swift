@@ -62,6 +62,7 @@ final class CloudFolder {
         var tags: [String]; var notes: String; var source: String
         var events: [Event]; var minutes: Int; var physicsMinutes: Int
         var health: [String: Double]
+        var stationaryLocations: [StationaryLocation]?
         struct Event: Codable { var date: Date; var kind: String; var detail: String }
     }
 
@@ -74,7 +75,7 @@ final class CloudFolder {
         let meta = RunFile(name: run.name, detectorLabel: run.detectorLabel, device: run.deviceID, start: run.start, end: run.end,
                            tags: run.tags, notes: run.notes, source: run.source,
                            events: run.events.sorted { $0.date < $1.date }.map { .init(date: $0.date, kind: $0.kind, detail: $0.detail) },
-                           minutes: records.count, physicsMinutes: records.filter(\.physics).count, health: health)
+                           minutes: records.count, physicsMinutes: records.filter(\.physics).count, health: health, stationaryLocations: run.stationaryLocations)
         do {
             try withFolder { root in
                 let fm = FileManager.default
@@ -109,7 +110,7 @@ final class CloudFolder {
             while let u = e?.nextObject() as? URL {
                 if u.pathComponents.contains("phone") { continue }
                 let n = u.lastPathComponent
-                if n.hasPrefix("muon_") && n.hasSuffix(".csv") { out.append(u) }
+                if (n.hasPrefix("muon_") || n.hasPrefix("records_")) && n.hasSuffix(".csv") { out.append(u) }
             }
             return out.sorted { $0.lastPathComponent > $1.lastPathComponent }
         }) ?? []

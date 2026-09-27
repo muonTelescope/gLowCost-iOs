@@ -2,6 +2,22 @@
 
 An iPhone app for the **gLOWCOST MuonP4** cosmic-ray muon telescope. It pairs with the detector over Bluetooth, logs every minute of counts with pressure, temperature and GPS, keeps a history of runs, and shows the live rate on the Lock Screen, in the Dynamic Island and in widgets.
 
+## New in 2.1 — recovery and measurement metadata
+
+- **Reconnect safely:** verify and save each recovered minute individually, retry missing SD records without blocking later records, and include previous boot journals. Recovered data fill the live charts and widgets.
+- **GPS continues during Bluetooth gaps.** Retained timestamped fixes can be matched to recovered measurements. Assign a stationary location to a selected time range where GPS is missing, including minutes recovered later.
+- **Both copies can carry location:** send GPS/manual observations back to the detector's SD companion file with acknowledged, repeat-safe uploads. The detector always operates without a phone.
+- **Full measurement context:** preserve DAC0–7, HV command/state, humidity, UTC and monotonic time, sync metadata, raw/physics cumulative counts, radio flags, firmware revision and FPGA hash in imports and exports.
+- **Clearer layouts:** all-pair run charts, whole-run statistics, a session sum, unobstructed bottom controls, and matching Lock Screen/Dynamic Island legends. Pressure and temperature units have their own row. The app icon uses the existing muon glyph.
+
+The deployment is **v2.2 with three connected paddles**, fourth channel unconnected. See [schema 5, examples and scientific limits](docs/RECORD-SCHEMA-5.md). Extended metadata and GPS-on-SD require the matching firmware update; the existing version-4 BLE layout remains compatible. No GPX or Health imports are required.
+
+Core tests and signed iPhone builds pass. The new firmware has not been flashed in this update; background recovery, migration and physical-device layout checks remain pending.
+
+<p><img src="docs/screenshots/now-2.1-simulator.png" height="520" alt="Version 2.1 Now screen in the iPhone simulator, showing clearly labelled synthetic demo data"></p>
+
+*Current simulator capture with synthetic data. The images below are design mockups.*
+
 <p align="center">
   <img src="design/mockup-now.png" height="420" alt="Now screen">
   <img src="design/mockup-run-detail.png" height="420" alt="Run detail">
@@ -12,6 +28,16 @@ An iPhone app for the **gLOWCOST MuonP4** cosmic-ray muon telescope. It pairs wi
 </p>
 
 <sub>Design mockups, rendered before the final review fixes and with fallback fonts. See <a href="design/">design/</a>.</sub>
+
+## Live logging and layout update — September 27, 2026
+
+- Run charts show the sum and all three coincidence pairs together with a legend. Run cards wrap tags; bottom navigation reserves its actual height.
+- The Now screen has simpler environment labels, compact exposure units and an explicit session sum. Counting statistics use the entire run's physics minutes.
+- Missing minutes trigger automatic SD recovery when Bluetooth is available, with retries after failed transfers. Imports refresh the last-hour chart, Live Activity and widgets.
+- GPS remains active while logging, including Bluetooth outages when iOS permissions allow. Timestamped fixes are retained locally per run and matched to recovered minutes; a current location is never substituted for an old missing fix.
+- The Home Screen icon uses the existing muon glyph. Live Activity environment readings have their own row.
+
+These updates require on-device checks for scrolling, background GPS and reconnection recovery.
 
 ## Latest build update — September 27, 2026
 

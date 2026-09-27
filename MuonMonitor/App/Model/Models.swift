@@ -14,6 +14,7 @@ final class Run {
     var notes: String
     var source: String              // "phone" or "sd"
     var sdFileName: String?
+    var stationaryData: Data? = nil
     var exportedAt: Date?
     var exportFolder: String?       // folder name under cosmic/phone
     @Relationship(deleteRule: .cascade, inverse: \Minute.run) var minutes: [Minute] = []
@@ -24,6 +25,10 @@ final class Run {
         isLive = false; notes = ""
     }
 
+    var stationaryLocations: [StationaryLocation] {
+        get { stationaryData.flatMap { try? JSONDecoder().decode([StationaryLocation].self, from: $0) } ?? [] }
+        set { stationaryData = try? JSONEncoder().encode(newValue) }
+    }
     var sortedMinutes: [Minute] { minutes.sorted { $0.epoch < $1.epoch } }
     var records: [MinuteRecord] { sortedMinutes.map(\.record) }
     var physicsMinutes: Int { minutes.filter(\.physics).count }
@@ -49,17 +54,24 @@ final class Minute {
     var altitude: Double?
     var horizontalAccuracy: Double?
     var fromSD: Bool
+    var diagnosticData: Data? = nil
+    var locationSyncedRevision: String? = nil
     var run: Run?
 
     init(_ r: MinuteRecord) {
         epoch = r.epoch; sequence = r.sequence; bootID = r.bootID; intervalMS = r.intervalMS; physics = r.physics
         counts = r.counts; temperature = r.temperature; pressure = r.pressure; latitude = r.latitude; longitude = r.longitude
         altitude = r.altitude; horizontalAccuracy = r.horizontalAccuracy; fromSD = r.fromSD
+        diagnosticData = r.diagnostics.flatMap { try? JSONEncoder().encode($0) }
+    }
+    var diagnostics: [String: String] {
+        get { diagnosticData.flatMap { try? JSONDecoder().decode([String: String].self, from: $0) } ?? [:] }
+        set { diagnosticData = try? JSONEncoder().encode(newValue) }
     }
     var record: MinuteRecord {
         MinuteRecord(epoch: epoch, sequence: sequence, bootID: bootID, intervalMS: intervalMS, physics: physics, counts: counts,
                      temperature: temperature, pressure: pressure, latitude: latitude, longitude: longitude, altitude: altitude,
-                     horizontalAccuracy: horizontalAccuracy, fromSD: fromSD)
+                     horizontalAccuracy: horizontalAccuracy, fromSD: fromSD, diagnostics: diagnosticData.flatMap { try? JSONDecoder().decode([String: String].self, from: $0) })
     }
 }
 

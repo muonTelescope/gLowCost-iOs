@@ -120,3 +120,42 @@ struct TagEditor: View {
         tags.insert(t); newTag = ""
     }
 }
+
+struct StationaryLocationSheet: View {
+    @Environment(AppModel.self) private var app
+    @Environment(\.dismiss) private var dismiss
+    let run: Run
+    @State private var start = Date()
+    @State private var end = Date()
+    @State private var latitude = ""
+    @State private var longitude = ""
+    @State private var error: String?
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Stationary detector location") {
+                    TextField("Latitude (−90 to 90)", text: $latitude).keyboardType(.numbersAndPunctuation)
+                    TextField("Longitude (−180 to 180)", text: $longitude).keyboardType(.numbersAndPunctuation)
+                    DatePicker("From", selection: $start)
+                    DatePicker("Through", selection: $end)
+                }
+                Text("Only minutes without a location are filled. Recorded GPS is preserved. These positions are labelled manually assigned and queued for the detector SD card when compatible firmware is connected.")
+                if let error { Text(error).foregroundStyle(Palette.alert) }
+            }
+            .navigationTitle("Assign location").navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        do {
+                            guard let lat = Double(latitude), let lon = Double(longitude) else { throw LinkError("Enter latitude and longitude") }
+                            try app.assignStationaryLocation(run, from: start, to: end, latitude: lat, longitude: lon)
+                            dismiss()
+                        } catch { self.error = error.localizedDescription }
+                    }
+                }
+            }
+            .onAppear { start = run.start; end = run.end ?? run.records.last?.date ?? Date() }
+        }
+    }
+}

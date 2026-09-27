@@ -1,6 +1,6 @@
 # Data Files And SD Logging
 
-The firmware creates fresh files on the SD card for each detector start.
+The firmware creates fresh files on the SD card for each detector start. **[Schema 5](RECORD-SCHEMA-5.md) extends the base columns below with audit fields, raw/physics cumulative counters, firmware/hardware identity and GPS companions.**
 
 ## Muon Count File
 
@@ -87,7 +87,9 @@ http://192.168.4.1/api/latest.txt
 
 The app saves each run to the folder you choose (normally iCloud Drive › cosmic) as `phone/<yyyy-MM-dd_HHmm_name>/`:
 
-- `minutes.csv`: `epoch,iso,sequence,boot_id,interval_ms,physics_valid,ch01_p13,ch02_p12,ch12_p11,ch012_p22,gpio6_p31,gpio5_p29,gpio16_p36,temp_c,pressure_hpa,latitude,longitude,altitude_m,h_accuracy_m,source`. Counts are raw. `source` is `phone` or `sd` (minutes filled from the SD card).
+- `minutes.csv`: `epoch,iso,sequence,boot_id,interval_ms,physics_valid,ch01_p13,ch02_p12,ch12_p11,ch012_p22,gpio6_p31,gpio5_p29,gpio16_p36,temp_c,pressure_hpa,latitude,longitude,altitude_m,h_accuracy_m,source`. Counts are raw. `source` is `BLE` or `SD_backfill`. Additional diagnostic columns preserve acquisition, recovery, location provenance, and exact integer metadata.
 - `run.json`: name, detector label, tags, notes, start/end, events (reboots, Wi‑Fi and HV changes, gaps, SD fills, alerts) and the counting-statistics result per pair.
+
+GPS companion imports match records by boot/sequence. Manual stationary ranges are saved with the run and applied to later recovery.
 
 Column names match the SD files, so the same analysis scripts can read both.

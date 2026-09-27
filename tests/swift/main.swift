@@ -82,3 +82,60 @@ assert(csv.hasPrefix("epoch,iso,sequence") && csv.split(separator: "\n").count =
 assert(CSVExport.folderName(start: Date(timeIntervalSince1970: 1790260829), name: "External battery") == "2026-09-24_1440_External-battery")
 
 print("PASS: wire format, run labels, SD parsing (old/new), gap fill, health, binning, CSV export")
+
+// Recovery uses all minutes, including setup, and tolerates sorted/unsorted imports.
+assert(!RunRecovery.hasGap(clean))
+let interrupted = [clean[0], clean[3]]
+assert(RunRecovery.hasGap(interrupted))
+let recovered = SDLog.missingMinutes(phone: interrupted, sd: Array(clean[0...3]))
+assert(!RunRecovery.hasGap(interrupted + recovered))
+assert(SDLog.missingMinutes(phone: interrupted + recovered, sd: Array(clean[0...3])).isEmpty)
+let beforeRecovery = RunRecovery.series(interrupted, count: 4) { $0.coincidences }
+assert(beforeRecovery[1] == -1 && beforeRecovery[2] == -1)
+let afterRecovery = RunRecovery.series(interrupted + recovered, count: 4) { $0.coincidences }
+assert(afterRecovery == Array(clean[0...3]).map(\.coincidences))
+var setupMinute = clean[1]; setupMinute.physics = false
+assert(!RunRecovery.hasGap([clean[0], setupMinute, clean[2]]))
+assert(RunRecovery.series([clean[0], setupMinute, clean[2]], count: 3) { $0.coincidences }[1] == -1)
+var legacy = clean[3]; legacy.bootID = ""; legacy.sequence = -1
+assert(RunRecovery.hasGap([clean[0], legacy]))
+assert(Health.report(clean).allSatisfy { $0.minutes == 600 })
+print("PASS: reconnect gaps, repeated SD merge, recovered live series, entire-run health")
+
+// Production firmware-generated schema-5 row: do not round uint64 through Double.
+let auditText = try String(contentsOfFile: CommandLine.arguments[2], encoding: .utf8)
+let audit = SDLog.parseMuon(auditText, fileName: "records_123.csv").minutes[0]
+assert(audit.bootID == "123" && audit.sequence == 1)
+assert(audit.diagnostics?["physics_total0"] == "9007199254740993")
+assert(audit.diagnostics?["total0"] == "18446744073709551605")
+assert(audit.diagnostics?["dac0_start"] == "753" && audit.diagnostics?["dac0"] == "754")
+assert(audit.diagnostics?["fourfold"] == "" && audit.diagnostics?["hv_measured_v"] == "")
+assert(audit.diagnostics?["humidity_pct"] == "40.500")
+let roundTrip = SDLog.parseMuon(CSVExport.csv([audit]), fileName: "phone.csv").minutes[0]
+assert(roundTrip.diagnostics?["physics_total0"] == audit.diagnostics?["physics_total0"])
+assert(roundTrip.diagnostics?["detector_epoch"] == audit.diagnostics?["epoch"])
+var jumped = audit; jumped.epoch += 3600
+assert(SDLog.sameMinute(audit, jumped))
+jumped.sequence += 1; jumped.epoch = audit.epoch
+assert(!SDLog.sameMinute(audit, jumped))
+let assignment = StationaryLocation(start: audit.epoch - 60, end: audit.epoch + 60, latitude: 40.7, longitude: -74)
+var assigned = audit; assignment.apply(to: &assigned)
+assert(assigned.latitude == 40.7 && assigned.diagnostics?["location_source"] == "manual_stationary")
+let revision = assigned.diagnostics?["location_revision"]
+assignment.apply(to: &assigned)
+assert(assigned.diagnostics?["location_revision"] == revision)
+var outside = audit; outside.epoch += 120; assignment.apply(to: &outside); assert(outside.latitude == nil)
+var gps = audit; gps.latitude = 41; gps.longitude = -73; assignment.apply(to: &gps); assert(gps.latitude == 41)
+let importedGPS = SDLog.parseMuon(CSVExport.csv([assigned]), fileName: "phone.csv").minutes[0]
+assert(importedGPS.latitude == 40.7 && importedGPS.longitude == -74)
+let sidecar = "boot_id,sequence,revision,latitude_e7,longitude_e7,fix_epoch_ms,h_accuracy_cm,altitude_cm,location_source\n123,1,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,407000000,-740000000,1790500000000,1000,2000,gps\n123,1,bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb,408000000,-740000000,1790500000000,-1,-100000000,manual_stationary\n"
+let positions = LocationSidecar.parse(sidecar)
+assert(positions.count == 1 && positions[0].latitude == 40.8 && positions[0].source == "manual_stationary")
+assert(positions[0].altitude == nil && positions[0].accuracy == nil)
+assert(LocationSidecar.parse(sidecar.replacingOccurrences(of: "407000000", with: "nan").replacingOccurrences(of: "408000000", with: "910000000")).isEmpty)
+assert(RecordIntegrity.hash(Data("hello".utf8)) == 0x4f9f2cab)
+var oldJSON = try JSONSerialization.jsonObject(with: JSONEncoder().encode(audit)) as! [String: Any]
+oldJSON.removeValue(forKey: "diagnostics")
+let oldRecord = try JSONDecoder().decode(MinuteRecord.self, from: JSONSerialization.data(withJSONObject: oldJSON))
+assert(oldRecord.diagnostics == nil && oldRecord.counts == audit.counts)
+print("PASS: firmware schema-5 CSV, exact 64-bit metadata, clock jumps, stationary assignments, GPS companion and export round trips, legacy records")

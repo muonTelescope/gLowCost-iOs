@@ -6,10 +6,11 @@ import UniformTypeIdentifiers
 struct RunDetailView: View {
     @Environment(AppModel.self) private var app
     @Bindable var run: Run
-    @State private var channel = -1
+    private let channel = -1
     @State private var binMinutes = 30
     @State private var selected: Date?
     @State private var renaming = false
+    @State private var assigningLocation = false
     @State private var editingTags = false
     @State private var sharing = false
     @State private var filling = false
@@ -27,10 +28,11 @@ struct RunDetailView: View {
                 header
                 stats(recs)
                 controls
-                RateChart(bins: bins, events: run.events, binMinutes: binMinutes, selected: $selected)
+                RateChart(bins: bins, events: run.events, binMinutes: binMinutes, selected: $selected, channels: (0..<3).map { Binning.bins(recs, channel: $0, minutes: binMinutes) })
                 environmentCharts(bins)
                 if hasAltitude(recs) { AltitudeChart(bins: bins, selected: $selected) }
                 TrackMap(records: recs, selected: selected, channel: channel)
+                Button("Assign stationary location") { assigningLocation = true }.buttonStyle(.muonSecondary)
                 HealthCard(records: recs)
                 eventsCard
                 sdCard
@@ -46,6 +48,7 @@ struct RunDetailView: View {
                 Button { sharing = true } label: { Image(systemName: "square.and.arrow.up") }.accessibilityLabel("Share run card")
             }
         }
+        .sheet(isPresented: $assigningLocation) { StationaryLocationSheet(run: run) }
         .sheet(isPresented: $renaming) { RenameSheet(run: run) }
         .sheet(isPresented: $editingTags) { TagEditor(run: run) }
         .sheet(isPresented: $sharing) { ShareCardSheet(run: run) }
@@ -91,19 +94,12 @@ struct RunDetailView: View {
         return HStack(spacing: 8) {
             StatTile(value: (Double(phys.count) * 60).hoursMinutes, label: "exposure")
             StatTile(value: rate.map { String(format: "%.2f", $0) } ?? "—", label: "mean /min")
-            StatTile(value: "\(phys.count)", label: "of \(recs.count) min")
             StatTile(value: p.isEmpty ? "—" : String(format: "%.2f", (p.max() ?? 0) - (p.min() ?? 0)), label: "ΔP hPa")
         }
     }
 
     private var controls: some View {
         VStack(spacing: 8) {
-            // Custom segmented controls so the channel names can use CH superscript/subscript notation.
-            ChamferSegmented(options: [-1, 0, 1, 2], selection: $channel) { ch, on in
-                if ch < 0 { Text("Sum").font(Typography.raleway(15, .bold, relativeTo: .subheadline)).foregroundStyle(on ? Palette.ink : Palette.muted) }
-                else { ChannelLabel(channel: ch, size: 15, color: on ? Palette.ink : Palette.muted) }
-            }
-            .accessibilityLabel("Channel")
             ChamferSegmented(options: [1, 10, 30, 60], selection: $binMinutes) { m, on in
                 Text("\(m) min").font(Typography.mono(13, .medium, relativeTo: .footnote)).foregroundStyle(on ? Palette.ink : Palette.muted)
             }
@@ -217,6 +213,7 @@ struct RateChart: View {
     let events: [RunEvent]
     var binMinutes: Int = 30
     @Binding var selected: Date?
+    var channels: [[RateBin]] = []
 
     private var selectedBin: RateBin? {
         guard let selected else { return nil }
@@ -230,9 +227,13 @@ struct RateChart: View {
                 Spacer(minLength: 8)
                 Text("counts / min").font(Typography.monoCaption).foregroundStyle(Palette.secondaryText).lineLimit(1)
             }
-            HStack(spacing: 6) {
-                Rectangle().fill(Palette.data).frame(width: 14, height: 2)
-                Text("Raw counts, ±1σ").font(Typography.caption).foregroundStyle(Palette.secondaryText)
+            FlowLayout(spacing: 12) {
+                ForEach([-1] + Array(channels.indices), id: \.self) { ch in
+                    HStack(spacing: 4) {
+                        Rectangle().fill(ch < 0 ? Palette.data : Palette.pairs[ch]).frame(width: 14, height: 2)
+                        ChannelLabel(channel: ch, size: 13)
+                    }
+                }
             }
             if bins.isEmpty {
                 ContentUnavailableView("No physics minutes yet", systemImage: "chart.xyaxis.line", description: Text("Setup and HV settling are not charted."))
@@ -247,6 +248,14 @@ struct RateChart: View {
                             .foregroundStyle(Palette.data.opacity(0.25)).lineStyle(StrokeStyle(lineWidth: bins.count > 80 ? 1 : 3, lineCap: .butt))
                         LineMark(x: .value("Time", b.date), y: .value("Rate", b.rate), series: .value("Segment", "line\(b.segment)"))
                             .foregroundStyle(Palette.data).lineStyle(StrokeStyle(lineWidth: 2, lineJoin: .round))
+                    }
+                    ForEach(Array(channels.enumerated()), id: \.offset) { entry in
+                        ForEach(entry.element) { b in
+                            LineMark(x: .value("Time", b.date), y: .value("Rate", b.rate), series: .value("Segment", "channel\(entry.offset)-\(b.segment)"))
+                                .foregroundStyle(Palette.pairs[entry.offset]).lineStyle(StrokeStyle(lineWidth: 1.5))
+                            PointMark(x: .value("Time", b.date), y: .value("Rate", b.rate))
+                                .foregroundStyle(Palette.pairs[entry.offset]).symbolSize(10)
+                        }
                     }
                     ForEach(events.filter { $0.eventKind != .label && $0.eventKind != .note }) { e in
                         RuleMark(x: .value("Event", e.date))
@@ -347,7 +356,7 @@ struct HealthCard: View {
         let report = Health.report(records)
         let pairs = Array(report.prefix(3))
         VStack(alignment: .leading, spacing: 10) {
-            Text("Counting statistics").font(Typography.headline)
+            Text("Counting statistics · entire run").font(Typography.headline)
             Text("Scatter ÷ what pure chance allows. 1.00 is ideal; higher values point to interference, a noisy threshold or a changing setup.")
                 .font(Typography.caption).foregroundStyle(Palette.secondaryText).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
@@ -429,7 +438,7 @@ struct TrackMap: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel("Colour shows rate, dim green is low, bright green is high")
                 }
-                Text("One fix per minute, coloured by that minute's rate. The white dot follows the time selected in the chart. Location stays on your phone and in your cosmic folder.")
+                Text("Recorded or manually assigned positions, coloured by minute rate. The white dot follows the time selected in the chart. Location stays on your phone and in your cosmic folder.")
                     .font(Typography.caption).foregroundStyle(Palette.secondaryText)
             }
         }.card()

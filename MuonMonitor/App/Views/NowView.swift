@@ -177,7 +177,7 @@ struct NowView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Pressure").capsLabel(Palette.pressure)
                 valueWithUnit(last?.pressure.map(\.hpa), "hPa")
-                if let d = app.pressureChange3h {
+                if let d = app.pressureChange3h, abs(d) >= 0.3 {
                     Text(abs(d) < 0.3 ? "Steady over 3 h" : String(format: "%@ %.1f hPa in 3 h", d < 0 ? "Falling" : "Rising", abs(d)))
                         .font(Typography.caption).foregroundStyle(Palette.secondaryText).lineLimit(2).minimumScaleFactor(0.85)
                 }
@@ -185,7 +185,6 @@ struct NowView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Detector temp").capsLabel(Palette.temperature)
                 valueWithUnit(last?.temperature.map { String(format: "%.1f", $0) }, "°C")
-                Text("Recorded with each minute").font(Typography.caption).foregroundStyle(Palette.secondaryText).lineLimit(2).minimumScaleFactor(0.85)
             }.card()
         }
     }
@@ -215,7 +214,7 @@ struct NowView: View {
             ViewThatFits(in: .horizontal) {
                 sessionPairs(size: 15)
                 sessionPairs(size: 13)
-                VStack(alignment: .leading, spacing: 4) { ForEach(0..<3, id: \.self) { pairTotal($0, t.pairs[$0], size: 15) } }
+                VStack(alignment: .leading, spacing: 4) { pairTotal(-1, t.muons, size: 15); ForEach(0..<3, id: \.self) { pairTotal($0, t.pairs[$0], size: 15) } }
             }
         }
         .card()
@@ -224,7 +223,7 @@ struct NowView: View {
     private func sessionPairs(size: CGFloat) -> some View {
         let t = app.sessionTotals
         return HStack(spacing: 10) {
-            ChannelLabel(channel: -1, size: size)
+            pairTotal(-1, t.muons, size: size)
             ForEach(0..<3, id: \.self) { pairTotal($0, t.pairs[$0], size: size) }
         }
     }
@@ -245,7 +244,7 @@ struct NowView: View {
     }
 
     @ViewBuilder private var healthCard: some View {
-        let report = Health.report(app.recent)
+        let report = Health.report(app.currentRun?.records ?? app.recent)
         if report.allSatisfy({ $0.minutes >= 30 }), let worst = report.max(by: { $0.fano < $1.fano }) {
             HStack(spacing: 12) {
                 Image(systemName: worst.level == .good ? "checkmark.seal" : "exclamationmark.triangle")

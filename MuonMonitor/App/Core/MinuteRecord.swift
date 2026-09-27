@@ -16,6 +16,7 @@ struct MinuteRecord: Codable, Equatable, Sendable {
     var altitude: Double?
     var horizontalAccuracy: Double?
     var fromSD: Bool
+    var diagnostics: [String: String]? = nil
 
     static let channelNames = ["CH01", "CH02", "CH12", "CH012", "GPIO6", "GPIO5", "GPIO16"]
 

@@ -114,11 +114,12 @@ struct RunsView: View {
         }
         let env = Dictionary(uniqueKeysWithValues: urls.filter { $0.lastPathComponent.hasPrefix("env_") }.compactMap { u in
             text(u).map { (String(u.lastPathComponent.dropFirst(4)), $0) } })
-        let muons = urls.filter { $0.lastPathComponent.hasPrefix("muon_") }
+        let locationTexts = urls.filter { $0.lastPathComponent.hasPrefix("locations_") }.compactMap(text)
+        let muons = urls.filter { $0.lastPathComponent.hasPrefix("muon_") || $0.lastPathComponent.hasPrefix("records_") }
         guard !muons.isEmpty else { return "Choose at least one muon_….csv file (its env_….csv adds pressure and temperature for older logs)." }
         return muons.compactMap { u -> String? in
             guard let t = text(u) else { return "\(u.lastPathComponent) could not be read." }
-            return app.importSD(text: t, fileName: u.lastPathComponent, envText: env[String(u.lastPathComponent.dropFirst(5))])
+            return app.importSD(text: t, fileName: u.lastPathComponent, envText: env[String(u.lastPathComponent.dropFirst(5))], locationTexts: locationTexts)
         }.joined(separator: "\n")
     }
 }
@@ -146,11 +147,10 @@ struct RunRow: View {
                 Text(summary).font(Typography.monoCaption).foregroundStyle(Palette.secondaryText).lineLimit(1).minimumScaleFactor(0.8)
                 if let note = healthNote { note }
                 if !run.tags.isEmpty {
-                    HStack(spacing: 4) { ForEach(run.tags.prefix(3), id: \.self) { TagChip(tag: $0) } }
+                    FlowLayout(spacing: 4) { ForEach(run.tags.prefix(3), id: \.self) { TagChip(tag: $0) } }
                 }
-            }
-            Spacer(minLength: 8)
-            Sparkline(values: hourly).frame(width: 80, height: 28)
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            Sparkline(values: hourly).frame(width: 50, height: 28)
             if run.exportedAt != nil {
                 Image(systemName: "checkmark.icloud").foregroundStyle(Palette.physics).accessibilityLabel("Saved to your cosmic folder")
             }

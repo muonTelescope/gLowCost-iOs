@@ -25,6 +25,15 @@ struct DetectorView: View {
                         SectionLabel("Files on the SD card")
                         filesCard
                     }
+                    if !app.firmwareIdentity.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Firmware & hardware").font(Typography.headline)
+                            Text("Firmware " + String((app.firmwareIdentity["firmware"] ?? "unknown").prefix(12)))
+                            Text("Hardware " + (app.firmwareIdentity["hardware"] ?? "unknown"))
+                            Text("Built " + (app.firmwareIdentity["build_utc"] ?? "unknown"))
+                            Text("Record schema " + (app.firmwareIdentity["schema"] ?? "legacy"))
+                        }.font(Typography.monoCaption).card()
+                    }
                     expertLink
                 }
                 // Review fix 7: no oversized bottom padding; the floating bars reserve their own inset.

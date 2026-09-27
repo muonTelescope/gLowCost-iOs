@@ -35,7 +35,7 @@ For each pair the app compares minute-to-minute scatter with pure counting chanc
 
 ## SD card
 
-- **Run detail › Fill gaps from the SD card** (live run) downloads the active SD log over Bluetooth and adds only the minutes the phone missed, marked `source = sd`.
+- **Run detail › Fill gaps from the SD card** (live run) downloads the active SD log over Bluetooth and adds only the minutes the phone missed, marked `source = SD_backfill`.
 - **Runs › Import** takes `muon_….csv` files (with their `env_….csv` for older firmware) from Files or from anywhere in your cosmic folder. A file that overlaps a phone run fills its gaps; otherwise it becomes its own run.
 - **Detector › Files on the SD card** lists and downloads files; muon logs are imported automatically.
 
@@ -54,3 +54,13 @@ Local notifications, each at most once every 30 minutes: updates stopped (Settin
 - iOS ends a Live Activity after about 8 hours; restart it in Settings. Logging continues.
 - Force-quitting the app stops background logging until it is opened again. The detector keeps writing its SD card.
 - With a free Apple account the app must be reinstalled from Xcode every 7 days.
+
+## Recovery, location and schema-5 diagnostics
+
+Logging on the detector never depends on the phone. Leave logging enabled in the app to keep collecting GPS when Bluetooth drops. When iOS allows the connection to resume, schema-5 recovery verifies and saves records one at a time; a disconnected transfer resumes from the saved records. Keep the app open to finish a large backlog more quickly.
+
+In **Runs → run detail → Assign stationary location**, enter decimal latitude/longitude and select the interval during which the detector stayed there. Only missing locations are filled; recorded GPS is preserved. Later-recovered minutes in the interval use the same assignment. This is explicitly marked as a manual position, not a measured fix. Historical positions iOS did not provide remain unknown unless assigned.
+
+Available positions are uploaded to `locations_<boot>.csv` on the SD card while logging and connected. Transfers acknowledge flushed writes and can be retried. Precise coordinates therefore exist on both the phone and SD; they are not in advertisements. Import `records_<boot>.csv` (or `muon_*.csv`) together with its `locations_<boot>.csv` companion when importing a card.
+
+The Detector page shows firmware identity after the schema handshake. Exported CSV columns include per-minute DAC/HV settings, humidity, clock metadata, radio state and exact cumulative totals. [The schema guide](RECORD-SCHEMA-5.md) documents units, provenance, unknown values and the v2.2 three-paddle hardware limits. An HV command is not a measured voltage.

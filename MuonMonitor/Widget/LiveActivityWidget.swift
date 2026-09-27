@@ -22,29 +22,33 @@ struct MuonLiveActivity: Widget {
                     HStack(spacing: 6) {
                         MuonMark(size: 16, color: Palette.lilac)
                         Text("MuonP4").font(Typography.raleway(15, .bold)).foregroundStyle(Palette.ink)
-                    }
+                    }.padding(.leading, 10).padding(.top, 8)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    PhasePill(phase: stale ? .overdue : s.phase)
+                    PhasePill(phase: stale ? .overdue : s.phase).padding(.trailing, 10).padding(.top, 8)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack(alignment: .lastTextBaseline) {
-                            Text(s.total.map(String.init) ?? "—").font(Typography.monoFixed(46, .medium)).foregroundStyle(Palette.ink)
-                                .lineLimit(1).minimumScaleFactor(0.6)
-                            Text("/ min").font(Typography.monoFixed(13)).foregroundStyle(Palette.data)
-                            Spacer()
-                            PairColumn(pairs: s.pairs)
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(alignment: .bottom, spacing: 12) {
+                            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                Text(stale ? "—" : s.total.map(String.init) ?? "—")
+                                    .font(Typography.monoFixed(36, .medium)).foregroundStyle(Palette.ink)
+                                    .lineLimit(1).minimumScaleFactor(0.7)
+                                Text("/min").font(Typography.monoFixed(11)).foregroundStyle(Palette.data)
+                            }
+                            ActivityPlot(state: s).frame(maxWidth: .infinity).frame(height: 42)
                         }
-                        HStack {
-                            EnvLine(state: s)
-                            Spacer()
+                        ActivityLegend(pairs: s.pairs)
+                        HStack(spacing: 8) {
+                            EnvLine(state: s).layoutPriority(1)
+                            Spacer(minLength: 0)
                             Button(intent: StopLoggingIntent()) {
-                                Text("Stop logging").font(Typography.raleway(12, .bold)).foregroundStyle(Palette.ink)
+                                Text("Stop").font(Typography.raleway(11, .bold)).foregroundStyle(Palette.ink)
                             }
                             .tint(Palette.violet.opacity(0.35))
                         }
                     }
+                    .padding(.horizontal, 12).padding(.top, 4).padding(.bottom, 12)
                 }
             } compactLeading: {
                 if stale {
@@ -77,53 +81,61 @@ struct LockScreenActivity: View {
     let stale: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                MuonMark(size: 15, color: Palette.lilac)
-                Text("MuonP4").font(Typography.raleway(15, .bold)).foregroundStyle(Palette.ink)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                MuonMark(size: 14, color: Palette.lilac)
+                Text("MuonP4").font(Typography.raleway(14, .bold)).foregroundStyle(Palette.ink)
                 PhasePill(phase: stale ? .overdue : state.phase)
-                Spacer(minLength: 4)
+                Spacer(minLength: 2)
                 if let d = state.sampleDate {
-                    Text("\(Text(d, style: .relative)) ago").font(Typography.monoFixed(11)).foregroundStyle(Palette.muted).lineLimit(1)
+                    Text("\(Text(d, style: .relative)) ago").font(Typography.monoFixed(10))
+                        .foregroundStyle(Palette.muted).lineLimit(1).minimumScaleFactor(0.8)
                 }
             }
-            HStack(alignment: .bottom, spacing: 14) {
+            HStack(alignment: .bottom, spacing: 12) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(stale ? "—" : state.total.map(String.init) ?? "—").font(Typography.monoFixed(40, .medium)).foregroundStyle(Palette.ink)
+                    Text(stale ? "—" : state.total.map(String.init) ?? "—")
+                        .font(Typography.monoFixed(36, .medium)).foregroundStyle(Palette.ink)
                         .lineLimit(1).minimumScaleFactor(0.6)
-                    Text("coincidences / min").font(Typography.monoFixed(11)).foregroundStyle(Palette.data).lineLimit(1).fixedSize()
+                    Text("coincidences / min").font(Typography.monoFixed(10)).foregroundStyle(Palette.data)
+                        .lineLimit(1).minimumScaleFactor(0.8)
                 }
-                Spacer(minLength: 6)
-                VStack(alignment: .trailing, spacing: 3) {
-                    chart.frame(width: 170, height: 40)
-                    Text(usesLines ? "last 30 min · per pair" : "last 30 min · 1 bar per minute")
-                        .font(Typography.monoFixed(10)).foregroundStyle(Palette.muted).lineLimit(1)
-                }
+                ActivityPlot(state: state).frame(maxWidth: .infinity).frame(height: 44)
             }
-            HStack(spacing: 12) {
-                ForEach(0..<3, id: \.self) { i in
-                    HStack(spacing: 4) {
-                        if usesLines { Rectangle().fill(Palette.pairs[i]).frame(width: 8, height: 2) }
-                        ChannelLabel(channel: i, size: 14, color: Palette.muted, fixed: true)
-                        Text(state.pairs.count > i ? "\(state.pairs[i])" : "—").font(Typography.monoFixed(13, .medium)).foregroundStyle(Palette.ink)
-                    }
-                }
-                Spacer(minLength: 4)
-                EnvLine(state: state)
-            }
+            ActivityLegend(pairs: state.pairs)
+            EnvLine(state: state).frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(16)
+        .padding(.horizontal, 16).padding(.vertical, 12)
     }
+}
 
-    /// Decided default: three coincidence-pair lines. Older app builds that do not send
-    /// `recentPairs` fall back to the green minute bars (review fix 4).
-    private var usesLines: Bool { (state.recentPairs?.count ?? 0) == 3 && (state.recentPairs?.first?.count ?? 0) > 1 }
+/// The same pair colours and plot appear on the Lock Screen and expanded Island.
+struct ActivityPlot: View {
+    let state: MuonActivity.ContentState
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            if let series = state.recentPairs, series.count == 3, (series.first?.count ?? 0) > 1 {
+                PairLines(series: series).padding(.horizontal, 2).padding(.vertical, 2)
+            } else {
+                MinuteBars(values: state.recent, tint: Palette.data)
+            }
+            Text("last 30 min").font(Typography.monoFixed(9)).foregroundStyle(Palette.muted)
+        }
+    }
+}
 
-    @ViewBuilder private var chart: some View {
-        if usesLines, let series = state.recentPairs {
-            PairLines(series: series)
-        } else {
-            MinuteBars(values: state.recent, tint: Palette.data)
+struct ActivityLegend: View {
+    let pairs: [Int]
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(0..<3, id: \.self) { i in
+                HStack(spacing: 3) {
+                    ChannelLabel(channel: i, size: 12, color: Palette.muted, fixed: true, legendColor: Palette.pairs[i])
+                    Text(pairs.count > i ? "\(pairs[i])" : "—")
+                        .font(Typography.monoFixed(12, .medium)).foregroundStyle(Palette.ink)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 }
@@ -141,29 +153,15 @@ struct PhasePill: View {
     }
 }
 
-struct PairColumn: View {
-    let pairs: [Int]
-    var body: some View {
-        Grid(alignment: .trailing, horizontalSpacing: 8, verticalSpacing: 1) {
-            ForEach(0..<3, id: \.self) { i in
-                GridRow {
-                    ChannelLabel(channel: i, size: 14, color: Palette.muted, fixed: true)
-                    Text(pairs.count > i ? "\(pairs[i])" : "—").font(Typography.monoFixed(12, .medium)).foregroundStyle(Palette.ink)
-                }
-            }
-        }
-    }
-}
-
 struct EnvLine: View {
     let state: MuonActivity.ContentState
     var body: some View {
         HStack(spacing: 4) {
-            if let p = state.pressure { Text(String(format: "%.1f hPa", p)).foregroundStyle(Palette.pressure) }
+            if let p = state.pressure { Text(String(format: "%.1f hPa", p)).foregroundStyle(Palette.pressure).fixedSize() }
             if state.pressure != nil, state.temperature != nil { Text("·").foregroundStyle(Palette.muted) }
-            if let t = state.temperature { Text(String(format: "%.1f °C", t)).foregroundStyle(Palette.temperature) }
+            if let t = state.temperature { Text(String(format: "%.1f °C", t)).foregroundStyle(Palette.temperature).fixedSize() }
         }
-        .font(Typography.monoFixed(12))
-        .lineLimit(1)
+        .font(Typography.monoFixed(11))
+        .lineLimit(1).fixedSize(horizontal: true, vertical: false)
     }
 }

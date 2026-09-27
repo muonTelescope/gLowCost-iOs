@@ -14,6 +14,7 @@ struct ChannelLabel: View {
     var color: Color = Palette.muted
     var weight: Typography.MonoWeight = .medium
     var fixed = false
+    var legendColor: Color? = nil
     static let minDigit: CGFloat = 11
 
     static func paddles(_ channel: Int) -> (String, String)? {
@@ -52,6 +53,9 @@ struct ChannelLabel: View {
                 let (sup, sub) = pair
                 HStack(alignment: .center, spacing: 1) {
                     Text("CH").font(font(size))
+                        .padding(.vertical, legendColor == nil ? 0 : 2)
+                        .overlay(alignment: .top) { if let legendColor { Rectangle().fill(legendColor).frame(height: 1.5) } }
+                        .overlay(alignment: .bottom) { if let legendColor { Rectangle().fill(legendColor).frame(height: 1.5) } }
                     VStack(alignment: .leading, spacing: -digit * 0.28) {
                         Text(sup).font(font(digit))
                         Text(sub).font(font(digit))

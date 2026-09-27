@@ -21,4 +21,4 @@ fi
 # -Onone keeps assert() active.
 swiftc -Onone -module-cache-path "$out/swift-cache" \
     "$app/Shared/Telemetry.swift" "$app"/App/Core/*.swift "$repo/tests/swift/main.swift" -o "$out/swift-test"
-"$out/swift-test" "$out/fixture.bin"
+"$out/swift-test" "$out/fixture.bin" "$repo/tests/protocol/audit-v5.csv"

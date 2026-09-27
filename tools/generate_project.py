@@ -26,7 +26,7 @@ WIDGET_SHARED = [p for p in swift("Shared") if p not in WIDGET_EXCLUDED]
 RESOURCES = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "Resources").rglob("*") if p.is_file() and not p.name.startswith("."))
 APP_SOURCES = swift("App") + swift("Shared")
 WIDGET_SOURCES = swift("Widget") + WIDGET_SHARED
-OTHER_FILES = ["App/Info.plist", "Widget/Info.plist", "App/App.entitlements", "Widget/Widget.entitlements", "Config.xcconfig"]
+OTHER_FILES = ["Assets.xcassets", "App/Info.plist", "Widget/Info.plist", "App/App.entitlements", "Widget/Widget.entitlements", "Config.xcconfig"]
 
 objects = {}
 def add(key, obj):
@@ -36,7 +36,7 @@ def add(key, obj):
 def filetype(p):
     return {".swift": "sourcecode.swift", ".plist": "text.plist.xml", ".entitlements": "text.plist.entitlements",
             ".xcconfig": "text.xcconfig", ".md": "net.daringfireball.markdown", ".ttf": "file", ".otf": "file",
-            ".txt": "text"}[pathlib.Path(p).suffix]
+            ".txt": "text", ".xcassets": "folder.assetcatalog"}[pathlib.Path(p).suffix]
 
 fileref = {}
 for p in sorted(set(APP_SOURCES + WIDGET_SOURCES + OTHER_FILES + RESOURCES)):
@@ -50,7 +50,7 @@ def group(name, paths):
 
 groups = [group("App", [p for p in fileref if p.startswith("App/")]), group("Shared", [p for p in fileref if p.startswith("Shared/")]),
           group("Widget", [p for p in fileref if p.startswith("Widget/")]), group("Resources", RESOURCES),
-          group("Configuration", ["Config.xcconfig"])]
+          group("Configuration", ["Config.xcconfig", "Assets.xcassets"])]
 products = add(oid("group", "products"), {"isa": "PBXGroup", "children": [app_product, ext_product], "name": "Products", "sourceTree": "<group>"})
 main_group = add(oid("group", "main"), {"isa": "PBXGroup", "children": groups + [products], "sourceTree": "<group>"})
 
@@ -68,7 +68,7 @@ def empty_phase(target, isa):
 xcconfig = fileref["Config.xcconfig"]
 COMMON = {"SDKROOT": "iphoneos", "IPHONEOS_DEPLOYMENT_TARGET": "26.0", "SWIFT_VERSION": "5.0", "TARGETED_DEVICE_FAMILY": "1",
           "CODE_SIGN_STYLE": "Automatic", "DEVELOPMENT_TEAM": "$(MUON_TEAM)", "CLANG_ENABLE_MODULES": "YES",
-          "SWIFT_EMIT_LOC_STRINGS": "YES", "ENABLE_USER_SCRIPT_SANDBOXING": "YES", "CURRENT_PROJECT_VERSION": "2", "MARKETING_VERSION": "2.0"}
+          "SWIFT_EMIT_LOC_STRINGS": "YES", "ENABLE_USER_SCRIPT_SANDBOXING": "YES", "CURRENT_PROJECT_VERSION": "3", "MARKETING_VERSION": "2.1"}
 DEBUG = {"SWIFT_ACTIVE_COMPILATION_CONDITIONS": "DEBUG", "SWIFT_OPTIMIZATION_LEVEL": "-Onone", "DEBUG_INFORMATION_FORMAT": "dwarf", "ONLY_ACTIVE_ARCH": "YES", "ENABLE_TESTABILITY": "YES", "COPY_PHASE_STRIP": "NO"}
 RELEASE = {"SWIFT_ACTIVE_COMPILATION_CONDITIONS": "", "SWIFT_OPTIMIZATION_LEVEL": "-O", "DEBUG_INFORMATION_FORMAT": "dwarf-with-dsym"}
 
@@ -99,8 +99,8 @@ app_target = add(oid("target", "app"), {
     "productType": "com.apple.product-type.application", "buildRules": [], "dependencies": [dependency],
     "buildConfigurationList": configs("app", {"PRODUCT_NAME": "MuonMonitor", "PRODUCT_BUNDLE_IDENTIFIER": "$(MUON_BUNDLE_ID)",
                                              "INFOPLIST_FILE": "App/Info.plist", "GENERATE_INFOPLIST_FILE": "NO", "CODE_SIGN_ENTITLEMENTS": "$(MUON_APP_ENTITLEMENTS)",
-                                             "LD_RUNPATH_SEARCH_PATHS": RUNPATH, "SKIP_INSTALL": "NO"}),
-    "buildPhases": [sources_phase("app", APP_SOURCES), empty_phase("app", "PBXFrameworksBuildPhase"), resources_phase("app", RESOURCES), embed]})
+                                             "LD_RUNPATH_SEARCH_PATHS": RUNPATH, "SKIP_INSTALL": "NO", "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon"}),
+    "buildPhases": [sources_phase("app", APP_SOURCES), empty_phase("app", "PBXFrameworksBuildPhase"), resources_phase("app", RESOURCES + ["Assets.xcassets"]), embed]})
 
 objects[project_id] = {"isa": "PBXProject", "attributes": {"LastUpgradeCheck": "2700", "BuildIndependentTargetsInParallel": "YES",
                        "TargetAttributes": {app_target: {"CreatedOnToolsVersion": "27.0"}, ext_target: {"CreatedOnToolsVersion": "27.0"}}},

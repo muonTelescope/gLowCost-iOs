@@ -93,3 +93,7 @@ Write one UTF-8 JSON object, at most 240 bytes, with a positive uint32 `id` and 
 For `file`, the first result establishes a fixed byte limit. Supply that limit on every following chunk so downloading a currently growing log terminates at a coherent prefix. Names are restricted to safe CSV/log basenames; paths and directory traversal are rejected. The app validates every returned offset, decodes base64, writes a protected partial file and renames it only after completion. A rename/removal on the detector during transfer produces an error rather than silently selecting a different file.
 
 No command provides P4 firmware flashing, arbitrary memory access, file deletion or a Wi-Fi-on transition after shutdown. FPGA programming uses the already embedded bitstream and is an explicit operator control, just as in the web UI.
+
+## Schema-5 record and location extension
+
+The 160-byte version-4 value above is unchanged. [Record schema 5](RECORD-SCHEMA-5.md) adds `hello`, `clock`, `journal`, `record` and `location` commands through the same encrypted control service. `hello` exchanges app/firmware identity; indexed CSV records preserve diagnostics and exact cumulative integers without enlarging the advertising packet. The extended `ram` CSV command is paginated with `offset`, `next` and `eof`.
