@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// One bar per minute; -1 draws a short grey dash for a missing minute.
+/// One bar per minute in phosphor green (review fix 4: green everywhere);
+/// -1 draws a short grey dash for a missing minute.
 /// Built from shapes (not Canvas) so it also renders in widgets and Live Activities.
 struct MinuteBars: View {
     let values: [Int]
-    var tint: Color = Palette.accent
+    var tint: Color = Palette.data
     var highlightLast = true
     var body: some View {
         GeometryReader { geo in
@@ -14,9 +15,9 @@ struct MinuteBars: View {
             HStack(alignment: .bottom, spacing: slot * 0.4) {
                 ForEach(Array(values.enumerated()), id: \.offset) { i, v in
                     if v < 0 {
-                        Capsule().fill(Palette.secondaryText.opacity(0.5)).frame(width: slot * 0.6, height: 1.5)
+                        Rectangle().fill(Palette.secondaryText.opacity(0.5)).frame(width: slot * 0.6, height: 1.5)
                     } else {
-                        Capsule().fill(tint.opacity(highlightLast && i == n - 1 ? 1 : 0.45))
+                        Rectangle().fill(tint.opacity(highlightLast && i == n - 1 ? 1 : 0.55))
                             .frame(width: slot * 0.6, height: max(2, geo.size.height * CGFloat(v) / maxV))
                     }
                 }

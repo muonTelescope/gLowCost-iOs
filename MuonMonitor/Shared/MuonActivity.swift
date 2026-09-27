@@ -7,6 +7,7 @@ struct MuonActivity: ActivityAttributes {
         var runName: String
         var pairs: [Int]            // CH01, CH02, CH12 for the last completed minute
         var recent: [Int]           // last 30 minute totals, oldest first; -1 = missed/setup minute
+        var recentPairs: [[Int]]? = nil  // last 30 minutes per pair [CH01, CH02, CH12], for the Lock Screen line chart
         var temperature: Double?
         var pressure: Double?
         var sampleDate: Date?       // end of the last completed minute
